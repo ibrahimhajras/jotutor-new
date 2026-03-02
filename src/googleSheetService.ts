@@ -185,9 +185,7 @@ export const setDocument = async (sheetName: string, docId: string, data: object
     }
 };
 
-/**
- * Seeds the 'courses' collection with the initial data from mockData.ts.
- */
+
 export const seedInitialCourses = async (): Promise<{ success: boolean; error?: string; seededCourses?: Course[] }> => {
     if (!db) return { success: false, error: 'Database not initialized' };
     const collectionName = 'courses';

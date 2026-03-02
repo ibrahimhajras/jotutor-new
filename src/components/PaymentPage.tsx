@@ -10,6 +10,8 @@ interface PaymentPageProps {
     strings: { [key: string]: string };
     language: Language;
     onEnroll: (course: Course, status: 'Success' | 'Pending', details?: any) => void;
+    isLoggedIn: boolean;
+    onLoginRequired: () => void;
 }
 
 declare global {
@@ -18,7 +20,7 @@ declare global {
     }
 }
 
-const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll }) => {
+const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn, onLoginRequired }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [showCardForm, setShowCardForm] = useState(false);
     const [gatewayError, setGatewayError] = useState<string | null>(null);
@@ -91,6 +93,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll }) => {
                         log(`✅ Hosted fields initialized: ${JSON.stringify(response)}`);
                         setSessionReady(true);
                         setIsLoading(false);
+                        setShowCardForm(true); // Now we can safely show the form
                     },
                     formSessionUpdate: function (response: any) {
                         log(`📋 Form session update: status=${response.status}`);
@@ -312,8 +315,12 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll }) => {
     };
 
     const handleConfirmPayment = () => {
+        if (!isLoggedIn) {
+            onLoginRequired();
+            return;
+        }
         if (paymentMethod === 'visa') {
-            setShowCardForm(true);
+            // setShowCardForm(true); // Don't show yet, wait for session init
             initializePaymentSession();
         }
     };
@@ -409,83 +416,81 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll }) => {
                     {/* Main Payment Area */}
                     <div className="lg:col-span-8">
                         <div className="bg-white p-8 sm:p-12 rounded-[3rem] shadow-2xl border border-gray-100 min-h-[500px] flex flex-col">
-                            {!showCardForm ? (
-                                <div className="flex-1 flex flex-col items-center justify-center animate-fade-in py-6">
-                                    <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-12">
-                                        <button onClick={() => setPaymentMethod('visa')} className={`flex flex-col items-center gap-3 p-8 rounded-[2.5rem] border-2 transition-all ${paymentMethod === 'visa' ? 'border-blue-600 bg-blue-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
-                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'visa' ? 'bg-blue-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                                            </div>
-                                            <span className={`font-black text-[10px] uppercase tracking-widest ${paymentMethod === 'visa' ? 'text-blue-900' : 'text-gray-400'}`}>البطاقة البنكية</span>
-                                        </button>
-                                        <button onClick={() => setPaymentMethod('cliq')} className={`flex flex-col items-center gap-3 p-8 rounded-[2.5rem] border-2 transition-all ${paymentMethod === 'cliq' ? 'border-green-600 bg-green-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
-                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'cliq' ? 'bg-green-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
-                                                <span className="font-black text-xl italic">Q</span>
-                                            </div>
-                                            <span className={`font-black text-[10px] uppercase tracking-widest ${paymentMethod === 'cliq' ? 'text-green-900' : 'text-gray-400'}`}>تحويل CliQ</span>
-                                        </button>
-                                    </div>
-                                    <button onClick={handleConfirmPayment} disabled={isLoading} className="w-full max-w-sm py-5 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 shadow-[0_15px_30px_rgba(0,33,70,0.2)] transition-all transform active:scale-95 text-lg flex items-center justify-center gap-3">
-                                        {isLoading ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : "بدء الاتصال بالبنك"}
+                            <div className={`${showCardForm ? 'hidden' : 'flex-1 flex flex-col items-center justify-center animate-fade-in py-6'}`}>
+                                <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-12">
+                                    <button onClick={() => setPaymentMethod('visa')} className={`flex flex-col items-center gap-3 p-8 rounded-[2.5rem] border-2 transition-all ${paymentMethod === 'visa' ? 'border-blue-600 bg-blue-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'visa' ? 'bg-blue-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                        </div>
+                                        <span className={`font-black text-[10px] uppercase tracking-widest ${paymentMethod === 'visa' ? 'text-blue-900' : 'text-gray-400'}`}>البطاقة البنكية</span>
+                                    </button>
+                                    <button onClick={() => setPaymentMethod('cliq')} className={`flex flex-col items-center gap-3 p-8 rounded-[2.5rem] border-2 transition-all ${paymentMethod === 'cliq' ? 'border-green-600 bg-green-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
+                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'cliq' ? 'bg-green-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
+                                            <span className="font-black text-xl italic">Q</span>
+                                        </div>
+                                        <span className={`font-black text-[10px] uppercase tracking-widest ${paymentMethod === 'cliq' ? 'text-green-900' : 'text-gray-400'}`}>تحويل CliQ</span>
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="animate-fade-in-up flex-1 flex flex-col">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <button onClick={() => { setShowCardForm(false); setSessionReady(false); setGatewayError(null); setPaymentStep(''); }} className="text-blue-600 font-black text-xs flex items-center gap-2 hover:bg-blue-50 px-4 py-2 rounded-full transition-all">&larr; رجوع</button>
-                                        <div className="bg-gray-100 text-[9px] font-black text-gray-500 px-4 py-1.5 rounded-full border uppercase tracking-widest flex items-center gap-2">
-                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                                            Secure Payment
-                                        </div>
-                                    </div>
+                                <button onClick={handleConfirmPayment} disabled={isLoading} className="w-full max-w-sm py-5 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 shadow-[0_15px_30px_rgba(0,33,70,0.2)] transition-all transform active:scale-95 text-lg flex items-center justify-center gap-3">
+                                    {isLoading ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : "بدء الاتصال بالبنك"}
+                                </button>
+                            </div>
 
-                                    {/* Card Hosted Fields */}
-                                    <div className="flex-1 space-y-5">
-                                        <div>
-                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">اسم حامل البطاقة</label>
-                                            <input type="text" id="cardholder-name" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Cardholder Name" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">رقم البطاقة</label>
-                                            <input type="text" id="card-number" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Card Number" />
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">الشهر</label>
-                                                <input type="text" id="expiry-month" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="MM" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">السنة</label>
-                                                <input type="text" id="expiry-year" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="YY" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">CVV</label>
-                                                <input type="text" id="security-code" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="CVV" />
-                                            </div>
-                                        </div>
-
-                                        {paymentStep && (
-                                            <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3">
-                                                <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                                                {paymentStep}
-                                            </div>
-                                        )}
-
-                                        {gatewayError && (
-                                            <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm font-bold">
-                                                ⚠️ {gatewayError}
-                                                <button onClick={() => { setGatewayError(null); setIsLoading(false); setPaymentStep(''); }} className="block text-xs mt-1 underline">حاول مجددًا</button>
-                                            </div>
-                                        )}
-
-                                        <button onClick={handleSubmitPayment} disabled={isLoading || !sessionReady} className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all text-lg flex items-center justify-center gap-3 mt-4 ${isLoading || !sessionReady ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-900 hover:bg-blue-800 active:scale-95'}`}>
-                                            {isLoading ? (
-                                                <><div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>{paymentStep || 'جاري المعالجة...'}</>
-                                            ) : !sessionReady ? 'جاري تحميل نموذج الدفع...' : `ادفع ${course.priceJod || course.price} دينار`}
-                                        </button>
+                            <div className={`${!showCardForm ? 'hidden' : 'animate-fade-in-up flex-1 flex flex-col'}`}>
+                                <div className="flex items-center justify-between mb-6">
+                                    <button onClick={() => { setShowCardForm(false); setSessionReady(false); setGatewayError(null); setPaymentStep(''); }} className="text-blue-600 font-black text-xs flex items-center gap-2 hover:bg-blue-50 px-4 py-2 rounded-full transition-all">&larr; رجوع</button>
+                                    <div className="bg-gray-100 text-[9px] font-black text-gray-500 px-4 py-1.5 rounded-full border uppercase tracking-widest flex items-center gap-2">
+                                        <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
+                                        Secure Payment
                                     </div>
                                 </div>
-                            )}
+
+                                {/* Card Hosted Fields */}
+                                <div className="flex-1 space-y-5">
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">اسم حامل البطاقة</label>
+                                        <input type="text" id="cardholder-name" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Cardholder Name" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">رقم البطاقة</label>
+                                        <input type="text" id="card-number" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Card Number" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">الشهر</label>
+                                            <input type="text" id="expiry-month" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="MM" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">السنة</label>
+                                            <input type="text" id="expiry-year" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="YY" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">CVV</label>
+                                            <input type="text" id="security-code" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="CVV" />
+                                        </div>
+                                    </div>
+
+                                    {paymentStep && (
+                                        <div className="bg-blue-50 text-blue-800 px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3">
+                                            <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                                            {paymentStep}
+                                        </div>
+                                    )}
+
+                                    {gatewayError && (
+                                        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm font-bold">
+                                            ⚠️ {gatewayError}
+                                            <button onClick={() => { setGatewayError(null); setIsLoading(false); setPaymentStep(''); }} className="block text-xs mt-1 underline">حاول مجددًا</button>
+                                        </div>
+                                    )}
+
+                                    <button onClick={handleSubmitPayment} disabled={isLoading || !sessionReady} className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all text-lg flex items-center justify-center gap-3 mt-4 ${isLoading || !sessionReady ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-900 hover:bg-blue-800 active:scale-95'}`}>
+                                        {isLoading ? (
+                                            <><div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>{paymentStep || 'جاري المعالجة...'}</>
+                                        ) : !sessionReady ? 'جاري تحميل نموذج الدفع...' : `ادفع ${course.priceJod || course.price} دينار`}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

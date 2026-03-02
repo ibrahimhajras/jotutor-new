@@ -10,14 +10,9 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
     const [filter, setFilter] = useState<'All' | 'Success' | 'Failed' | 'Pending'>('All');
     const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
-    const filteredPayments = useMemo(() => {
-        // Sort by date descending
-        const sorted = [...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        
-        if (filter === 'All') {
-            return sorted;
-        }
-        return sorted.filter(p => p.status === filter);
+    const filteredPayments = useMemo<Payment[]>(() => {
+        // تم إخفاء عرض بيانات الدفعات القادمة من Firebase (قاعدة البيانات)
+        return [];
     }, [payments, filter]);
 
     return (
@@ -26,8 +21,8 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
             {selectedPayment && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6 relative animate-fade-in-up">
-                        <button 
-                            onClick={() => setSelectedPayment(null)} 
+                        <button
+                            onClick={() => setSelectedPayment(null)}
                             className="absolute top-4 left-4 text-gray-400 hover:text-gray-600 transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -35,7 +30,7 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
                             </svg>
                         </button>
                         <h2 className="text-2xl font-bold text-gray-800 mb-6 border-b pb-4 text-center">تفاصيل الدفعة الكاملة</h2>
-                        
+
                         <div className="space-y-3 text-right max-h-[60vh] overflow-y-auto pl-2">
                             <div className="flex flex-col sm:flex-row justify-between border-b border-gray-100 pb-2">
                                 <span className="font-semibold text-gray-600">الحالة:</span>
@@ -63,7 +58,7 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
                                 <span className="font-semibold text-gray-600">طريقة الدفع:</span>
                                 <span className="text-gray-800">{selectedPayment.paymentMethod || 'غير محدد'}</span>
                             </div>
-                            
+
                             {/* Technical Details Section */}
                             <div className="bg-gray-50 p-3 rounded-md mt-4 space-y-2">
                                 <h3 className="font-bold text-gray-700 text-sm mb-2 border-b pb-1">بيانات تقنية</h3>
@@ -93,9 +88,9 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
                                 )}
                             </div>
                         </div>
-                        
+
                         <div className="mt-6 text-center">
-                            <button 
+                            <button
                                 onClick={() => setSelectedPayment(null)}
                                 className="bg-blue-900 text-white px-8 py-2 rounded-lg hover:bg-blue-800 font-bold transition-colors shadow-md"
                             >
@@ -110,7 +105,7 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
                 <h1 className="text-3xl font-bold text-gray-800">إدارة الدفعات</h1>
                 <div className="flex space-x-2 space-x-reverse bg-gray-200 p-1 rounded-lg">
                     {(['All', 'Success', 'Pending', 'Failed'] as const).map(f => (
-                        <button 
+                        <button
                             key={f}
                             onClick={() => setFilter(f)}
                             className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${filter === f ? 'bg-white text-blue-900 shadow' : 'text-gray-600 hover:bg-gray-300'}`}
@@ -167,7 +162,7 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
                                             </span>
                                         </td>
                                         <td className="py-3 px-4">
-                                            <button 
+                                            <button
                                                 onClick={() => setSelectedPayment(payment)}
                                                 className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 px-3 py-1 rounded-md transition-colors text-xs font-bold"
                                             >

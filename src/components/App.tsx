@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { arStrings, enStrings } from '../localization';
 import { JOD_TO_USD_RATE } from '../constants';
-import { 
-    Page, Currency, Language, SiteContent, HeroSlide, Teacher, Testimonial, Course, BlogPost, 
-    OnboardingOptions, UserProfile, Payment, StaffMember, DashboardView 
+import {
+    Page, Currency, Language, SiteContent, HeroSlide, Teacher, Testimonial, Course, BlogPost,
+    OnboardingOptions, UserProfile, Payment, StaffMember, DashboardView
 } from '../types';
 
 import Header from './Header';
@@ -38,11 +38,11 @@ import WelcomeModal from './WelcomeModal';
 import PaymentRefundPage from './PaymentRefundPage';
 
 import { initialData } from '../mockData';
-import { 
+import {
     fetchPublicData,
     fetchAdminData,
-    overwriteCollection, 
-    updateConfig, 
+    overwriteCollection,
+    updateConfig,
     auth,
     db,
     onAuthStateChangedListener,
@@ -59,13 +59,13 @@ const App: React.FC = () => {
     const [isEnglishAdmin, setIsEnglishAdmin] = useState<boolean>(false);
     const [isAuthModalOpen, setAuthModalOpen] = useState(false);
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const [showWelcomeModal, setShowWelcomeModal] = useState(false); 
+    const [showWelcomeModal, setShowWelcomeModal] = useState(false);
     const [showLangConfirm, setShowLangConfirm] = useState(false);
     const [language, setLanguage] = useState<Language>('ar');
     const [strings, setStrings] = useState(arStrings);
     const [isTranslating, setIsTranslating] = useState(false);
     const [currency, setCurrency] = useState<Currency>('JOD');
-    
+
     // Data State
     const [users, setUsers] = useState<UserProfile[]>([]);
     const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -76,9 +76,9 @@ const App: React.FC = () => {
     const [blogPosts, setBlogPosts] = useState<BlogPost[]>(initialData.blogPosts);
     const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialData.heroSlides);
     const [siteContent, setSiteContent] = useState<SiteContent>(initialData.siteContent);
-    const [siteContentEn, setSiteContentEn] = useState<SiteContent>(initialData.siteContent); 
+    const [siteContentEn, setSiteContentEn] = useState<SiteContent>(initialData.siteContent);
     const [onboardingOptions, setOnboardingOptions] = useState<OnboardingOptions>(initialData.onboardingOptions);
-    
+
     const [isDataLoading, setIsDataLoading] = useState(true);
     const [isAuthLoading, setIsAuthLoading] = useState(true);
 
@@ -162,7 +162,7 @@ const App: React.FC = () => {
         const loadData = async () => {
             setIsDataLoading(true);
             const response = await fetchPublicData();
-            if(response.success){
+            if (response.success) {
                 setTeachers(response.data.teachers || []);
                 setCourses(response.data.courses || []);
                 setTestimonials(response.data.testimonials || []);
@@ -180,6 +180,11 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        document.documentElement.lang = language;
+        document.documentElement.dir = 'rtl'; // Keep RTL even for English
+    }, [language]);
+
+    useEffect(() => {
         const unsubscribe = onAuthStateChangedListener(async (user) => {
             if (user) {
                 setIsLoggedIn(true);
@@ -189,7 +194,7 @@ const App: React.FC = () => {
                     setIsSuperAdmin(email === 'admin@jotutor.com');
                     if (email === 'eng@jotutor.com') { setIsEnglishAdmin(true); setLanguage('en'); setStrings(enStrings); }
                     const response = await fetchAdminData();
-                    if(response.success) {
+                    if (response.success) {
                         setUsers(response.data.Users || []);
                         setStaff(response.data.Staff || []);
                         setPayments(response.data.Payments || []);
@@ -213,10 +218,10 @@ const App: React.FC = () => {
     };
 
     const handleEnrollInCourse = async (course: Course, status: 'Success' | 'Pending', details?: any) => {
-        if (!userProfile) { 
-            alert("يرجى تسجيل الدخول أولاً."); 
-            setAuthModalOpen(true); 
-            return; 
+        if (!userProfile) {
+            alert("يرجى تسجيل الدخول أولاً.");
+            setAuthModalOpen(true);
+            return;
         }
 
         try {
@@ -324,10 +329,10 @@ const App: React.FC = () => {
 
     const renderContent = () => {
         if (isDataLoading || isAuthLoading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-500"></div></div>;
-        
+
         switch (page) {
             case 'home': return <>
-                <HeroSection onSignupClick={() => setAuthModalOpen(true)} heroSlides={heroSlides} strings={strings} language={language}/>
+                <HeroSection onSignupClick={() => setAuthModalOpen(true)} heroSlides={heroSlides} strings={strings} language={language} />
                 <FeaturesSection content={currentSiteContent.homepage} strings={strings} />
                 <HowItWorks content={currentSiteContent.homepage} strings={strings} />
                 <TeacherSearch content={currentSiteContent.homepage} teachers={displayedTeachers} subjects={onboardingOptions.subjects} onSelectTeacher={(id) => handleNavigate('teacher-profile', id)} isHomePageVersion={true} strings={strings} language={language} />
@@ -335,7 +340,7 @@ const App: React.FC = () => {
                 <TestimonialsSection content={currentSiteContent.homepage} testimonials={testimonials} strings={strings} />
                 <AILessonPlanner content={currentSiteContent.homepage} strings={strings} language={language} />
             </>;
-            case 'admin-dashboard': return <AdminDashboard onLogout={() => { auth?.signOut(); handleNavigate('home'); }} content={isEnglishAdmin ? siteContentEn : siteContent} setContent={handleSetSiteContent} heroSlides={heroSlides} setHeroSlides={(v:any)=>handleUpdateHeroSlides(v)} onboardingOptions={onboardingOptions} setOnboardingOptions={handleSetOnboardingOptions} users={users} setUsers={setUsers} staff={staff} setStaff={setStaff} payments={payments} setPayments={setPayments} teachers={teachers} setTeachers={handleUpdateTeachers} courses={courses} setCourses={handleUpdateCourses} testimonials={testimonials} setTestimonials={(v:any)=>handleUpdateTestimonials(v)} blogPosts={blogPosts} setBlogPosts={handleUpdateBlogPosts} subjects={onboardingOptions.subjects} strings={strings} language={language} isEnglishAdmin={isEnglishAdmin} isSuperAdmin={isSuperAdmin} onToggleEnglishMode={() => { const next = !isEnglishAdmin; setIsEnglishAdmin(next); setLanguage(next ? 'en' : 'ar'); setStrings(next ? enStrings : arStrings); }} onActivateCourse={async (pid) => {
+            case 'admin-dashboard': return <AdminDashboard onLogout={() => { auth?.signOut(); handleNavigate('home'); }} content={isEnglishAdmin ? siteContentEn : siteContent} setContent={handleSetSiteContent} heroSlides={heroSlides} setHeroSlides={(v: any) => handleUpdateHeroSlides(v)} onboardingOptions={onboardingOptions} setOnboardingOptions={handleSetOnboardingOptions} users={users} setUsers={setUsers} staff={staff} setStaff={setStaff} payments={payments} setPayments={setPayments} teachers={teachers} setTeachers={handleUpdateTeachers} courses={courses} setCourses={handleUpdateCourses} testimonials={testimonials} setTestimonials={(v: any) => handleUpdateTestimonials(v)} blogPosts={blogPosts} setBlogPosts={handleUpdateBlogPosts} subjects={onboardingOptions.subjects} strings={strings} language={language} isEnglishAdmin={isEnglishAdmin} isSuperAdmin={isSuperAdmin} onToggleEnglishMode={() => { const next = !isEnglishAdmin; setIsEnglishAdmin(next); setLanguage(next ? 'en' : 'ar'); setStrings(next ? enStrings : arStrings); }} onActivateCourse={async (pid) => {
                 const pay = payments.find(p => p.id === pid);
                 if (pay) {
                     const userRef = db!.collection('users').doc(pay.userId);
@@ -352,13 +357,13 @@ const App: React.FC = () => {
                     }
                 }
             }} />;
-            case 'teachers': return <TeacherSearch content={currentSiteContent.homepage} teachers={displayedTeachers} subjects={onboardingOptions.subjects} onSelectTeacher={(id) => handleNavigate('teacher-profile', id)} strings={strings} language={language}/>;
-            case 'courses': return <CoursesPage courses={displayedCourses} onSelectCourse={(id) => handleNavigate('course-profile', id)} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language}/>;
-            case 'blog': return <BlogPage posts={displayedBlogPosts.filter(p => p.type === 'article')} onSelectPost={(id) => handleNavigate('article', id)} strings={strings} language={language}/>;
-            case 'videos': return <VideosPage shorts={displayedBlogPosts.filter(p => p.type === 'short')} onSelectShort={(id) => handleNavigate('short-player', id)} strings={strings} language={language}/>;
-            case 'teacher-profile': return <TeacherProfilePage teacher={displayedTeachers.find(t => t.id === selectedId)!} strings={strings} language={language}/>;
-            case 'course-profile': return <CourseProfilePage course={displayedCourses.find(c => c.id === selectedId)!} onBook={(id) => handleNavigate('payment', id)} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language}/>;
-            case 'payment': return <PaymentPage course={displayedCourses.find(c => c.id === selectedId)!} siteContent={currentSiteContent} onEnroll={handleEnrollInCourse} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language}/>;
+            case 'teachers': return <TeacherSearch content={currentSiteContent.homepage} teachers={displayedTeachers} subjects={onboardingOptions.subjects} onSelectTeacher={(id) => handleNavigate('teacher-profile', id)} strings={strings} language={language} />;
+            case 'courses': return <CoursesPage courses={displayedCourses} onSelectCourse={(id) => handleNavigate('course-profile', id)} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language} />;
+            case 'blog': return <BlogPage posts={displayedBlogPosts.filter(p => p.type === 'article')} onSelectPost={(id) => handleNavigate('article', id)} strings={strings} language={language} />;
+            case 'videos': return <VideosPage shorts={displayedBlogPosts.filter(p => p.type === 'short')} onSelectShort={(id) => handleNavigate('short-player', id)} strings={strings} language={language} />;
+            case 'teacher-profile': return <TeacherProfilePage teacher={displayedTeachers.find(t => t.id === selectedId)!} strings={strings} language={language} />;
+            case 'course-profile': return <CourseProfilePage course={displayedCourses.find(c => c.id === selectedId)!} onBook={(id) => handleNavigate('payment', id)} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language} />;
+            case 'payment': return <PaymentPage course={displayedCourses.find(c => c.id === selectedId)!} siteContent={currentSiteContent} onEnroll={handleEnrollInCourse} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language} isLoggedIn={isLoggedIn} onLoginRequired={() => setAuthModalOpen(true)} />;
             case 'dashboard': return userProfile ? <Dashboard userProfile={userProfile} onLogout={() => { auth?.signOut(); handleNavigate('home'); }} onUpdateProfile={handleUpdateProfile} courses={displayedCourses} onSelectCourse={(id) => handleNavigate('course-profile', id)} currency={currency} exchangeRate={JOD_TO_USD_RATE} strings={strings} language={language} /> : <div className="py-20 text-center">يرجى تسجيل الدخول أولاً.</div>;
             case 'about': return <AboutPage content={currentSiteContent.about} strings={strings} />;
             case 'contact': return <ContactPage content={currentSiteContent.contact} strings={strings} />;
@@ -366,8 +371,8 @@ const App: React.FC = () => {
             case 'terms': return <TermsPage content={currentSiteContent.terms} strings={strings} />;
             case 'privacy': return <PrivacyPolicyPage content={currentSiteContent.privacy} strings={strings} />;
             case 'payment-refund': return <PaymentRefundPage content={currentSiteContent.paymentRefundPolicy || ''} strings={strings} />;
-            case 'article': { const post = displayedBlogPosts.find(p => p.id === selectedId); return post ? <ArticlePage post={post} onBack={() => handleNavigate('blog')} strings={strings} language={language}/> : <div className="py-20 text-center">المقال غير موجود.</div>; }
-            case 'short-player': { const post = displayedBlogPosts.find(p => p.id === selectedId); return post ? <ShortPlayerPage post={post} onBack={() => handleNavigate('videos')} strings={strings} language={language}/> : <div className="py-20 text-center">الفيديو غير موجود.</div>; }
+            case 'article': { const post = displayedBlogPosts.find(p => p.id === selectedId); return post ? <ArticlePage post={post} onBack={() => handleNavigate('blog')} strings={strings} language={language} /> : <div className="py-20 text-center">المقال غير موجود.</div>; }
+            case 'short-player': { const post = displayedBlogPosts.find(p => p.id === selectedId); return post ? <ShortPlayerPage post={post} onBack={() => handleNavigate('videos')} strings={strings} language={language} /> : <div className="py-20 text-center">الفيديو غير موجود.</div>; }
             default: return <div className="py-20 text-center">الصفحة المطلوبة غير موجودة.</div>;
         }
     };
@@ -382,9 +387,9 @@ const App: React.FC = () => {
             <main className="min-h-[70vh]">{renderContent()}</main>
             <Footer onNavigate={handleNavigate} strings={strings} />
             {isAuthModalOpen && <AuthModal initialView="login" onClose={() => setAuthModalOpen(false)} onLogin={async (e, p) => { try { await auth?.signInWithEmailAndPassword(e, p); setAuthModalOpen(false); return true; } catch { return false; } }} onSwitchToOnboarding={() => { setAuthModalOpen(false); setShowOnboarding(true); }} strings={strings} />}
-            {showOnboarding && <div className="fixed inset-0 z-[150] bg-blue-900/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"><div className="w-full max-w-4xl"><OnboardingWizard options={onboardingOptions} onSignupSuccess={async (p) => { try { const { user } = await auth!.createUserWithEmailAndPassword(p.email, p.password!); await setDocument('Users', user!.uid, { ...p, id: user!.uid, enrolledCourses: [] }); setShowOnboarding(false); handleNavigate('dashboard'); return null; } catch (e:any) { return e.message; } }} onClose={() => setShowOnboarding(false)} strings={strings} language={language} /></div></div>}
+            {showOnboarding && <div className="fixed inset-0 z-[150] bg-blue-900/60 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"><div className="w-full max-w-4xl"><OnboardingWizard options={onboardingOptions} onSignupSuccess={async (p) => { try { const { user } = await auth!.createUserWithEmailAndPassword(p.email, p.password!); await setDocument('Users', user!.uid, { ...p, id: user!.uid, enrolledCourses: [] }); setShowOnboarding(false); handleNavigate('dashboard'); return null; } catch (e: any) { return e.message; } }} onClose={() => setShowOnboarding(false)} strings={strings} language={language} /></div></div>}
             {showLangConfirm && <div className="fixed inset-0 z-[110] flex items-center justify-center px-4"><div className="absolute inset-0 bg-black/60" onClick={() => setShowLangConfirm(false)}></div><div className="relative bg-white rounded-xl p-6 w-full max-w-md"><h3 className="text-xl font-bold mb-4">{strings.langConfirmTitle}</h3><p className="mb-6">{strings.langConfirmMessage}</p><div className="flex flex-col gap-2"><button onClick={() => { performLanguageChange(); setShowLangConfirm(false); }} className="bg-green-500 text-white p-3 rounded-lg font-bold">{strings.langConfirmYes}</button><button onClick={() => setShowLangConfirm(false)} className="bg-gray-100 p-3 rounded-lg font-bold">{strings.langConfirmNo}</button></div></div></div>}
-            <Chatbot courses={displayedCourses} onSelectCourse={(id) => handleNavigate('course-profile', id)} strings={strings} language={language} isOpen={false} setIsOpen={() => {}} />
+            <Chatbot courses={displayedCourses} onSelectCourse={(id) => handleNavigate('course-profile', id)} strings={strings} language={language} isOpen={false} setIsOpen={() => { }} />
         </div>
     );
 };

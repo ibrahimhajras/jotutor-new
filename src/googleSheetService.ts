@@ -10,13 +10,13 @@ import { initialData } from './mockData';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase safely
@@ -33,6 +33,13 @@ try {
 
 export const auth = firebase.auth ? firebase.auth() : null;
 export const db = firebase.firestore ? firebase.firestore() : null;
+
+// Expose for debugging
+if (typeof window !== 'undefined') {
+    (window as any).auth = auth;
+    (window as any).db = db;
+    (window as any).firebase = firebase;
+}
 
 // Map from the app's old sheet names to Firestore collection names
 const collectionMap: { [key: string]: string } = {
@@ -85,7 +92,7 @@ export const fetchPublicData = async (): Promise<{ success: boolean; data: any }
         });
         promises.push(promise);
     }
-    
+
     const configPromise = db.collection('config').doc('main').get().then(docSnap => {
         if (docSnap.exists) {
             data['config'] = docSnap.data();
@@ -104,7 +111,7 @@ export const fetchAdminData = async (): Promise<{ success: boolean; data: any; f
     if (!db) return { success: false, data: {} };
     const data: { [key: string]: any } = {};
     const failedCollections: string[] = [];
-    
+
     const adminCollections = ['Users', 'Staff', 'Payments'];
     for (const key of adminCollections) {
         const collectionName = collectionMap[key];
@@ -121,7 +128,7 @@ export const fetchAdminData = async (): Promise<{ success: boolean; data: any; f
 
 export const onAuthStateChangedListener = (callback: (user: firebase.User | null) => void) => {
     if (auth) return auth.onAuthStateChanged(callback);
-    return () => {};
+    return () => { };
 };
 
 export const overwriteCollection = async (sheetName: string, newData: any[]): Promise<{ success: boolean; error?: string }> => {
@@ -145,7 +152,7 @@ export const overwriteCollection = async (sheetName: string, newData: any[]): Pr
         existingIds.forEach(id => {
             if (!newIds.has(id)) batch.delete(collectionRef.doc(id));
         });
-    
+
         await batch.commit();
         return { success: true };
     } catch (error: any) {
@@ -157,10 +164,10 @@ export const overwriteCollection = async (sheetName: string, newData: any[]): Pr
 /**
  * Updates the 'main' document in the 'config' collection with merging.
  */
-export const updateConfig = async (configData: { 
-    siteContent?: SiteContent | null, 
+export const updateConfig = async (configData: {
+    siteContent?: SiteContent | null,
     siteContentEn?: SiteContent | null,
-    onboardingOptions?: OnboardingOptions | null 
+    onboardingOptions?: OnboardingOptions | null
 }): Promise<{ success: boolean; error?: string }> => {
     if (!db) return { success: false, error: 'Database not initialized' };
     try {
@@ -176,7 +183,7 @@ export const updateConfig = async (configData: {
 export const setDocument = async (sheetName: string, docId: string, data: object): Promise<{ success: boolean; error?: string }> => {
     if (!db) return { success: false, error: 'Database not initialized' };
     const collectionName = collectionMap[sheetName];
-     try {
+    try {
         const cleaned = cleanData(data);
         await db.collection(collectionName).doc(docId).set(cleaned, { merge: true });
         return { success: true };

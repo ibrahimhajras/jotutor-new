@@ -38,7 +38,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
 
     const generateOrderId = () => `JOT-${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`;
 
-    /** Write HTML into an iframe via document.write (needed for auto-submitting forms with scripts) */
     const writeToIframe = (iframeId: string, html: string) => {
         const iframe = document.getElementById(iframeId) as HTMLIFrameElement | null;
         if (!iframe) return;
@@ -50,16 +49,46 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
         }
     };
 
+    const translateGatewayError = (code: string) => {
+        const errors: Record<string, string> = {
+            'UNSPECIFIED_FAILURE': 'تم رفض العملية من قبل البنك المصدر للبطاقة. يرجى التأكد من الرصيد أو التواصل مع البنك.',
+            'DECLINED': 'تم رفض البطاقة من قبل البنك.',
+            'TIMED_OUT': 'انتهت مهلة الاتصال بالبنك. يرجى المحاولة مرة أخرى.',
+            'EXPIRED_CARD': 'البطاقة منتهية الصلاحية.',
+            'INSUFFICIENT_FUNDS': 'لا يوجد رصيد كافٍ في البطاقة.',
+            'ACQUIRER_SYSTEM_ERROR': 'خطأ في نظام الدفع البنكي، يرجى المحاولة لاحقاً.',
+            'SYSTEM_ERROR': 'خطأ في النظام، يرجى المحاولة لاحقاً.',
+            'NOT_SUPPORTED': 'البطاقة غير مدعومة.',
+            'DECLINED_DO_NOT_CONTACT': 'تم رفض البطاقة نهائياً. يرجى استخدام بطاقة أخرى.',
+            'ABORTED': 'تم إلغاء العملية.',
+            'BLOCKED': 'تم حظر البطاقة لأسباب أمنية.',
+            'CANCELLED': 'تم إلغاء العملية من قبل المستخدم.',
+            'INVALID_REQUEST': 'طلب الدفع غير صالح أو بيانات البطاقة خاطئة.',
+            'REQUEST_REJECTED': 'تم رفض طلب الدفع من قبل البوابة.',
+            'AUTHENTICATION_FAILED': 'فشل التحقق من الهوية (3D Secure).',
+            'CARD_NOT_ENROLLED': 'البطاقة غير مسجلة في خدمة الأمان من البنك.',
+            'INVALID_CARD': 'بيانات البطاقة غير صحيحة.'
+        };
+        // Remove spaces and make uppercase to ensure matching
+        const cleanCode = (code || '').trim().toUpperCase();
+        return errors[cleanCode] || code;
+    };
+
     // ===========================
     // STEP 1: Create session + configure hosted fields
     // ===========================
-    const initializePaymentSession = async () => {
+    const initializePaymentSession = async (isRetry = false) => {
         const orderId = generateOrderId();
         const amount = course.priceJod || course.price || 1;
 
         try {
-            setIsLoading(true);
-            setGatewayError(null);
+            if (!isRetry) {
+                setIsLoading(true);
+                setGatewayError(null);
+            }
+            // For retries silently mark session not ready until it completes
+            setSessionReady(false);
+
             log(`🚀 Creating session: orderId=${orderId}, amount=${amount} JOD`);
 
             const resp = await fetch('/api/payment/session', {
@@ -92,8 +121,10 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                     initialized: function (response: any) {
                         log(`✅ Hosted fields initialized: ${JSON.stringify(response)}`);
                         setSessionReady(true);
-                        setIsLoading(false);
-                        setShowCardForm(true); // Now we can safely show the form
+                        if (!isRetry) {
+                            setIsLoading(false);
+                            setShowCardForm(true); // Now we can safely show the form
+                        }
                     },
                     formSessionUpdate: function (response: any) {
                         log(`📋 Form session update: status=${response.status}`);
@@ -120,9 +151,11 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 }
             });
         } catch (err: any) {
-            setIsLoading(false);
+            if (!isRetry) {
+                setIsLoading(false);
+                setGatewayError(err.message);
+            }
             log(`💥 Error: ${err.message}`);
-            setGatewayError(err.message);
         }
     };
 
@@ -279,6 +312,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
             setShowOTPFrame(false);
             log(`💥 Error in 3DS/Pay: ${err.message}`);
             setGatewayError(err.message);
+            // Silently fetch a new session and order ID for retry
+            initializePaymentSession(true);
         }
     };
 
@@ -303,11 +338,15 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 setPaymentReceipt({ orderId, amount, status: data.status, transactionId: data.transactionId });
                 onEnroll(course, 'Success', { transactionId: data.transactionId, orderId });
             } else {
-                throw new Error(`فشل الدفع: ${data.gatewayCode || data.error?.explanation || JSON.stringify(data.error)}`);
+                const gatewayCode = data.gatewayCode || data.error?.cause || data.result;
+                const translatedError = translateGatewayError(gatewayCode);
+                throw new Error(`فشل الدفع: ${translatedError} ${gatewayCode && gatewayCode !== translatedError ? `(${gatewayCode})` : ''}`);
             }
         } catch (err: any) {
             log(`💥 Payment error: ${err.message}`);
             setGatewayError(err.message);
+            // Silently fetch a new session and order ID for retry
+            initializePaymentSession(true);
         } finally {
             setIsLoading(false);
             setPaymentStep('');
@@ -478,9 +517,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                                     )}
 
                                     {gatewayError && (
-                                        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm font-bold">
-                                            ⚠️ {gatewayError}
-                                            <button onClick={() => { setGatewayError(null); setIsLoading(false); setPaymentStep(''); }} className="block text-xs mt-1 underline">حاول مجددًا</button>
+                                        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm font-bold flex flex-col gap-1">
+                                            <span>⚠️ {gatewayError}</span>
+                                            <span className="text-xs font-normal opacity-80">(تم تحديث الجلسة تلقائياً، يرجى إدخال البطاقة والمحاولة مجدداً)</span>
                                         </div>
                                     )}
 

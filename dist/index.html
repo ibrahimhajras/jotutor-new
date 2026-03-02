@@ -10,9 +10,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Jost:wght@300;400;600;700;900&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 
   <!-- Mastercard Hosted Session and 3DS libraries -->
   <script src="https://ap-gateway.mastercard.com/form/version/100/merchant/9547143225EP/session.js"></script>
@@ -31,7 +29,7 @@
           },
           fontFamily: {
             sans: ['Cairo', 'sans-serif'],
-            english: ['Jost', 'sans-serif']
+            english: ['Futura PT', 'sans-serif']
           }
         }
       }
@@ -39,9 +37,58 @@
   </script>
 
   <style>
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicLight.ttf') format('truetype');
+      font-weight: 300;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicBook.ttf') format('truetype');
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicMedium.ttf') format('truetype');
+      font-weight: 500;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicDemi.ttf') format('truetype');
+      font-weight: 600;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicBold.ttf') format('truetype');
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicExtraBold.ttf') format('truetype');
+      font-weight: 800;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'Futura PT';
+      src: url('/futura_pt/FuturaCyrillicHeavy.ttf') format('truetype');
+      font-weight: 900;
+      font-style: normal;
+    }
+
     :root {
       --font-arabic: 'Cairo', sans-serif;
-      --font-english: 'Jost', sans-serif;
+      --font-english: 'Futura PT', sans-serif;
     }
 
     html[lang="ar"],
@@ -110,7 +157,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-38f0bc73.js"></script>
+  <script type="module" crossorigin src="/assets/index-af32720f.js"></script>
 </head>
 
 <body>

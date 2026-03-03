@@ -234,7 +234,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 throw new Error(`3DS Auth failed: ${authData.error?.explanation || JSON.stringify(authData.error)}`);
             }
 
-            const otpHtml = authData.authentication?.redirect?.html;
+            let otpHtml = authData.authentication?.redirect?.html;
 
             // No challenge needed (frictionless) — only if payerInteraction explicitly says NOT_REQUIRED
             if (!otpHtml && authData.authentication?.payerInteraction === 'NOT_REQUIRED') {
@@ -243,25 +243,23 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 return;
             }
 
-            // Challenge needed — open OTP in a POPUP window to bypass bank X-Frame-Options
-            log('🌐 OTP challenge required - opening popup window...');
-            setShowOTPFrame(true); // Show overlay guiding the user to look at popup
-
-            // Open a popup for the bank's OTP challenge
-            const popup = window.open('', 'ThreeDS_Challenge', 'width=520,height=620,scrollbars=yes,resizable=yes,left=200,top=100');
-            if (!popup) {
-                // Popup blocked — fall back to iframe
-                log('⚠️ Popup blocked, attempting iframe fallback...');
-                await new Promise(r => setTimeout(r, 200));
-                writeToIframe('otp-3ds-frame', otpHtml);
-            } else {
-                popup.document.open();
-                popup.document.write(otpHtml);
-                popup.document.close();
+            if (otpHtml) {
+                // Ensure the form submits inside the iframe to prevent breaking out
+                otpHtml = otpHtml.replace(/target=["'][^"']*["']/gi, 'target="_self"');
+                if (!otpHtml.toLowerCase().includes('target=')) {
+                    otpHtml = otpHtml.replace('<form', '<form target="_self"');
+                }
             }
 
+            // Challenge needed — render OTP in the visible iframe
+            log('🌐 OTP challenge required - rendering iframe...');
+            setShowOTPFrame(true); // Show overlay containing the iframe
+
+            await new Promise(r => setTimeout(r, 200));
+            writeToIframe('otp-3ds-frame', otpHtml);
+
             // Listen for completion message from our /api/payment/3ds-callback
-            // The callback posts to window.opener (if popup) or window.top/parent (if iframe)
+            // The callback posts to window.top/parent
             await new Promise<void>((resolve, reject) => {
                 const maxWait = setTimeout(() => {
                     reject(new Error('انتهت مهلة التحقق من البنك'));
@@ -273,7 +271,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                         clearTimeout(maxWait);
                         window.removeEventListener('message', messageHandler);
                         setShowOTPFrame(false);
-                        try { popup?.close(); } catch (e) { /* ignore */ }
                         resolve();
                     }
                 };

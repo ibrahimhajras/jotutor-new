@@ -244,10 +244,13 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
             }
 
             if (otpHtml) {
-                // Ensure the form submits inside the iframe to prevent breaking out
+                // Forcibly rewrite ANY target attribute to _self so it can't break out of the iframe
+                log('🛠️ Rewriting form target to stay in iframe...');
                 otpHtml = otpHtml.replace(/target=["'][^"']*["']/gi, 'target="_self"');
+
+                // If it didn't have a target at all, ensure we add it just in case there's a base target
                 if (!otpHtml.toLowerCase().includes('target=')) {
-                    otpHtml = otpHtml.replace('<form', '<form target="_self"');
+                    otpHtml = otpHtml.replace(/<form/i, '<form target="_self"');
                 }
             }
 
@@ -256,7 +259,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
             setShowOTPFrame(true); // Show overlay containing the iframe
 
             await new Promise(r => setTimeout(r, 200));
-            writeToIframe('otp-3ds-frame', otpHtml);
+            writeToIframe('otp-3ds-frame', otpHtml || '');
 
             // Listen for completion message from our /api/payment/3ds-callback
             // The callback posts to window.top/parent

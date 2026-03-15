@@ -104,7 +104,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ onSignupClick, heroSlides = [
             )}
             <div className="mt-6 sm:mt-8 flex justify-center">
               <button onClick={onSignupClick} className="bg-green-500 text-white font-bold text-base sm:text-lg py-2.5 px-6 sm:py-3 sm:px-8 rounded-full hover:bg-green-600 transition-transform duration-300 transform hover:scale-105 shadow-xl flex items-center space-x-2 space-x-reverse">
-                <span>{strings.heroButton}</span>
+                <span>{content?.heroButton || strings.heroButton}</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l-5 5 5 5m-5-5h12" />
                 </svg>

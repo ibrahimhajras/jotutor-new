@@ -137,6 +137,8 @@ export interface BlogPost {
 }
 
 export interface ContactContent {
+  contactTitle?: string;
+  contactSubtitle?: string;
   email: string;
   phone: string;
   address: string;
@@ -173,6 +175,7 @@ export interface HomepageContent {
   testimonialsSubtitle: string;
   aiPlannerTitle: string;
   aiPlannerSubtitle: string;
+  heroButton?: string;
   statsTeacherCount?: string;
   statsTeacherLabel?: string;
   statsAcceptanceRate?: string;

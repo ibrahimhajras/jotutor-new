@@ -53,7 +53,7 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
       setLocalContent(prev => ({ ...prev, about: { ...prev.about, [name]: value } }));
   };
   
-  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
      setLocalContent(prev => ({ ...prev, contact: { ...prev.contact, [name]: value } }));
   };

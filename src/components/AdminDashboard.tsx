@@ -64,7 +64,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
 
     const renderMainContent = () => {
         if (viewingUser) {
-            return <AdminUserView user={viewingUser} onBack={handleBackToUsers} />;
+            return <AdminUserView user={viewingUser} onBack={handleBackToUsers} courses={props.courses} />;
         }
 
         switch (activeView) {

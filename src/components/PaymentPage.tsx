@@ -134,14 +134,14 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                             handle3DSAndPay(orderId, sessionId, amount);
                         } else if (response.status === "fields_in_error") {
                             setIsLoading(false);
-                        const errorFields = Object.keys(response.errors || {}).join(', ');
-                        setGatewayError(`${strings.fieldsError || 'Card fields error'}: ${errorFields}`);
-                        log(`❌ Card validation error: ${errorFields}`);
-                    } else {
-                        setIsLoading(false);
-                        setGatewayError(strings.systemError || 'System error. Please try again.');
-                        log(`❌ System error during tokenization`);
-                    }
+                            const errorFields = Object.keys(response.errors || {}).join(', ');
+                            setGatewayError(`${strings.fieldsError || 'Card fields error'}: ${errorFields}`);
+                            log(`❌ Card validation error: ${errorFields}`);
+                        } else {
+                            setIsLoading(false);
+                            setGatewayError(strings.systemError || 'System error. Please try again.');
+                            log(`❌ System error during tokenization`);
+                        }
                     }
                 },
                 interaction: {
@@ -369,9 +369,9 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
     };
 
     const handleConfirmManualTransfer = () => {
-        onEnroll(course, 'Pending', { 
+        onEnroll(course, 'Pending', {
             paymentMethod: paymentMethod === 'cliq' ? 'CliQ' : 'Bank Transfer',
-            transactionId: `MANUAL-${Date.now()}` 
+            transactionId: `MANUAL-${Date.now()}`
         });
         setShowManualModal(false);
     };
@@ -434,118 +434,142 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
             {/* Manual Payment Details Modal */}
             {showManualModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto">
-                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in-up">
+                    <div className="bg-white rounded-[3.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in-up">
                         {/* Modal Header */}
-                        <div className="bg-blue-900 p-8 text-white relative">
-                            <button onClick={() => setShowManualModal(false)} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                        <div className="bg-[#002146] p-10 text-white relative text-center">
+                            <button onClick={() => setShowManualModal(false)} className="absolute top-8 right-8 text-white/50 hover:text-white transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
-                            <h2 className="text-2xl font-black mb-1">{strings.paymentDetailsTitle} - {course.title}</h2>
-                            <div className="bg-green-500/20 text-green-300 text-[10px] font-black uppercase tracking-[0.2em] inline-block px-3 py-1 rounded-full border border-green-500/30">
+                            
+                            <h2 className="text-3xl font-black mb-2 flex items-center justify-center gap-3">
+                                {strings.paymentDetailsTitle} - {course.title}
+                            </h2>
+                            <p className="text-xl font-bold opacity-90 mb-4">
+                                {course.sessionCount || 8} Sessions X {course.totalHours || 1.5} Hours
+                            </p>
+                            
+                            <div className="bg-[#4CAF50]/20 text-[#4CAF50] text-sm font-black uppercase tracking-wider inline-block px-6 py-2 rounded-full border border-[#4CAF50]/30 shadow-lg shadow-black/20">
                                 {course.priceJod || course.price} {strings.jodLabel}
                             </div>
                         </div>
 
-                        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto text-right" dir="rtl">
-                            {/* CliQ & E-Wallets Section */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 text-blue-900 border-b pb-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                    <h3 className="font-black text-lg">{strings.eWallets}</h3>
+                        <div className="p-10 space-y-10 max-h-[70vh] overflow-y-auto text-right" dir="rtl">
+                            {/* E-Wallets Section */}
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-4 text-[#002146] border-b border-gray-100 pb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                    <h3 className="font-black text-2xl">{strings.eWallets}</h3>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex flex-col gap-2 relative">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{strings.cliqUsername} (CliQ)</span>
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-black text-blue-900">JOTUTOR</span>
-                                            <button onClick={() => navigator.clipboard.writeText('JOTUTOR')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-blue-600">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex flex-col gap-2 relative">
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{strings.walletNumber} (Zain Cash)</span>
-                                        <div className="flex items-center justify-between">
-                                            <span className="font-black text-blue-900">0792822241</span>
-                                            <button onClick={() => navigator.clipboard.writeText('0792822241')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-blue-600">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100 flex flex-col gap-2" dir="ltr">
-                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider text-right">IBAN</span>
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-black text-blue-900 text-xs sm:text-sm tracking-tighter">JO89 ARAB 1450 0000 0014 5199 5405 00</span>
-                                        <button onClick={() => navigator.clipboard.writeText('JO89 ARAB 1450 0000 0014 5199 5405 00')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-blue-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100 flex flex-col gap-1 relative group hover:border-blue-200 transition-all shadow-sm">
+                                        <button onClick={() => navigator.clipboard.writeText('JOTUTOR')} className="absolute left-6 top-1/2 -translate-y-1/2 p-3 bg-white rounded-2xl shadow-sm group-hover:shadow-md transition-all text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
                                         </button>
+                                        <span className="text-[11px] font-black text-gray-400 mb-1">{strings.cliqUsername} (CLIQ)</span>
+                                        <span className="font-black text-[#002146] text-xl">JOTUTOR</span>
+                                    </div>
+                                    <div className="bg-gray-50/50 p-6 rounded-[2rem] border border-gray-100 flex flex-col gap-1 relative group hover:border-blue-200 transition-all shadow-sm">
+                                        <button onClick={() => navigator.clipboard.writeText('0792822241')} className="absolute left-6 top-1/2 -translate-y-1/2 p-3 bg-white rounded-2xl shadow-sm group-hover:shadow-md transition-all text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                        </button>
+                                        <span className="text-[11px] font-black text-gray-400 mb-1">{strings.walletNumber} (ZAIN CASH)</span>
+                                        <span className="font-black text-[#002146] text-xl">0792822241</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Bank Transfer Section */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 text-blue-900 border-b pb-3">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                                    <h3 className="font-black text-lg">{strings.bankTransfer}</h3>
+                            <div className="space-y-6 pt-4">
+                                <div className="flex items-center gap-4 text-[#002146] border-b border-gray-100 pb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                    <h3 className="font-black text-2xl">{strings.bankTransfer}</h3>
                                 </div>
-                                
+
                                 {/* Etihad Bank */}
-                                <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 space-y-4 relative overflow-hidden">
-                                     <div className="flex justify-between items-start">
-                                         <div className="text-right">
-                                            <span className="bg-indigo-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Etihad Bank</span>
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{strings.accountName}</p>
-                                                    <p className="font-black text-blue-900">Smooth Business</p>
+                                <div className="bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100 space-y-6 relative group transition-all shadow-sm">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex flex-col gap-5 flex-1 text-right">
+                                            <div className="flex items-center justify-end gap-4">
+                                                <span className="bg-[#6366F1] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider">{strings.etihadBank}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#002146]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="bg-white p-4 rounded-2xl border border-gray-100 relative group/row hover:border-blue-200 transition-colors">
+                                                    <button onClick={() => navigator.clipboard.writeText('Smooth Business')} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-blue-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                                    </button>
+                                                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">{strings.accountName}</p>
+                                                    <p className="font-black text-[#002146] text-lg">Smooth Business</p>
                                                 </div>
-                                                <div>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{strings.accountNumber}</p>
-                                                    <p className="font-black text-blue-900 text-sm">0370137195515102</p>
+                                                <div className="bg-white p-4 rounded-2xl border border-gray-100 relative group/row hover:border-blue-200 transition-colors">
+                                                    <button onClick={() => navigator.clipboard.writeText('0370137195515102')} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all text-blue-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                                    </button>
+                                                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">{strings.accountNumber}</p>
+                                                    <p className="font-black text-[#002146] text-lg tracking-wider">0370137195515102</p>
                                                 </div>
-                                                <div dir="ltr">
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase text-right">IBAN</p>
-                                                    <p className="font-black text-blue-900 text-xs tracking-tighter">JO23UBS1250000370137195515102</p>
+                                                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 relative group/row hover:border-blue-200 transition-colors" dir="ltr">
+                                                    <button onClick={() => navigator.clipboard.writeText('JO23UBS1250000370137195515102')} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white hover:bg-gray-50 rounded-xl transition-all text-blue-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                                    </button>
+                                                    <p className="text-[10px] text-blue-400 font-black uppercase text-right mb-1">{strings.iban}</p>
+                                                    <p className="font-black text-[#002146] text-xs tracking-tight">JO23UBS1250000370137195515102</p>
                                                 </div>
                                             </div>
-                                         </div>
-                                         <button onClick={() => navigator.clipboard.writeText('JO23UBS1250000370137195515102')} className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-blue-600">
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                         </button>
-                                     </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Arab Bank */}
+                                <div className="bg-gray-50/50 p-8 rounded-[2.5rem] border border-gray-100 space-y-6 relative group transition-all shadow-sm">
+                                    <div className="flex justify-between items-center">
+                                        <div className="flex flex-col gap-5 flex-1 text-right">
+                                            <div className="flex items-center justify-end gap-4">
+                                                <span className="bg-[#475569] text-white text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-wider">{strings.arabBank}</span>
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#002146]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 relative group/row hover:border-blue-200 transition-colors" dir="ltr">
+                                                    <button onClick={() => navigator.clipboard.writeText('JO89 ARAB 1450 0000 0014 5199 5405 00')} className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white hover:bg-gray-50 rounded-xl transition-all text-blue-600">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                                    </button>
+                                                    <p className="text-[10px] text-blue-400 font-black uppercase text-right mb-1">{strings.iban}</p>
+                                                    <p className="font-black text-[#002146] text-xs tracking-tight">JO89 ARAB 1450 0000 0014 5199 5405 00</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Important Note */}
-                            <div className="bg-yellow-50 p-6 rounded-3xl border border-yellow-100 flex gap-4 text-right">
-                                <div className="p-3 bg-yellow-400 text-white rounded-2xl h-fit">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                            <div className="bg-[#FFFDE7] p-8 rounded-[2.5rem] border border-[#FFF9C4] flex gap-6 items-start shadow-sm">
+                                <div className="p-4 bg-[#FFD600] text-white rounded-2xl shadow-lg ring-4 ring-[#FFD600]/10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                                 </div>
-                                <div>
-                                    <h4 className="font-black text-yellow-900 mb-1">{strings.importantNote}</h4>
-                                    <p className="text-sm text-yellow-800 leading-relaxed font-bold opacity-80">{strings.manualPaymentInstruction}</p>
+                                <div className="flex-1">
+                                    <h4 className="font-black text-[#827717] text-xl mb-2">{strings.importantNote}</h4>
+                                    <p className="text-sm text-[#827717] leading-relaxed font-bold opacity-80">{strings.manualPaymentInstruction}</p>
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-3 pt-4">
+                            <div className="flex flex-col gap-5 pt-4">
                                 <button
                                     onClick={() => {
                                         const msg = encodeURIComponent(`مرحباً، لقد قمت بالتحويل لعملية شراء دورة: ${course.title} بمبلغ ${course.priceJod || course.price} د.أ. يرجى تفعيل الدورة.`);
                                         window.open(`https://wa.me/962792822241?text=${msg}`);
                                     }}
-                                    className="w-full py-5 rounded-2xl font-black text-white bg-green-600 hover:bg-green-700 shadow-xl shadow-green-200 transition-all flex items-center justify-center gap-3"
+                                    className="w-full py-6 rounded-[2rem] font-black text-white bg-[#4CAF50] hover:bg-[#43a047] shadow-xl shadow-green-200 transition-all flex items-center justify-center gap-4 text-xl"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.224-3.92s.214.123.58.345c1.486.879 3.198 1.345 4.947 1.345 5.232 0 9.492-4.259 9.494-9.494.001-2.536-.987-4.92-2.782-6.714s-4.177-2.783-6.715-2.783c-5.232 0-9.491 4.259-9.494 9.494 0 1.734.456 3.425 1.319 4.898.153.261.32.543.32.543l-1.008 3.682 3.839-1.006zm10.985-6.756c-.237-.119-1.401-.691-1.619-.771-.217-.079-.375-.119-.533.119-.158.238-.612.771-.75.931-.138.161-.277.181-.514.062-.237-.119-.998-.368-1.9-1.173-.702-.626-1.176-1.398-1.314-1.635-.138-.238-.015-.367.104-.485.107-.107.237-.277.356-.416.119-.138.158-.238.237-.396s.04-.297-.079-.416l-.533-1.287c-.156-.376-.32-.324-.533-.324-.158 0-.337-.019-.514-.019s-.474.066-.721.336c-.247.271-.948.926-.948 2.257 0 1.331.968 2.615 1.106 2.801.138.182 1.902 2.903 4.608 4.069.645.277 1.148.441 1.541.566.647.205 1.236.176 1.701.107.519-.077 1.401-.572 1.599-1.126.198-.554.198-1.029.139-1.127-.059-.099-.218-.158-.456-.277z"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.224-3.92s.214.123.58.345c1.486.879 3.198 1.345 4.947 1.345 5.232 0 9.492-4.259 9.494-9.494.001-2.536-.987-4.92-2.782-6.714s-4.177-2.783-6.715-2.783c-5.232 0-9.491 4.259-9.494 9.494 0 1.734.456 3.425 1.319 4.898.153.261.32.543.32.543l-1.008 3.682 3.839-1.006zm10.985-6.756c-.237-.119-1.401-.691-1.619-.771-.217-.079-.375-.119-.533.119-.158.238-.612.771-.75.931-.138.161-.277.181-.514.062-.237-.119-.998-.368-1.9-1.173-.702-.626-1.176-1.398-1.314-1.635-.138-.238-.015-.367.104-.485.107-.107.237-.277.356-.416.119-.138.158-.238.237-.396s.04-.297-.079-.416l-.533-1.287c-.156-.376-.32-.324-.533-.324-.158 0-.337-.019-.514-.019s-.474.066-.721.336c-.247.271-.948.926-.948 2.257 0 1.331.968 2.615 1.106 2.801.138.182 1.902 2.903 4.608 4.069.645.277 1.148.441 1.541.566.647.205 1.236.176 1.701.107.519-.077 1.401-.572 1.599-1.126.198-.554.198-1.029.139-1.127-.059-.099-.218-.158-.456-.277z" /></svg>
                                     {strings.contactWhatsApp}
                                 </button>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={() => setShowManualModal(false)} className="py-4 rounded-2xl font-black text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all">
-                                        {strings.close}
-                                    </button>
-                                    <button onClick={handleConfirmManualTransfer} className="py-4 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 transition-all">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <button onClick={handleConfirmManualTransfer} className="py-6 rounded-[2rem] font-black text-white bg-[#002146] hover:bg-[#00152e] shadow-xl transition-all text-xl">
                                         {strings.confirmManualTransfer}
+                                    </button>
+                                    <button onClick={() => setShowManualModal(false)} className="py-6 rounded-[2rem] font-black text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all text-xl">
+                                        {strings.close}
                                     </button>
                                 </div>
                             </div>
@@ -591,7 +615,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                     <div className="lg:col-span-8">
                         <div className="bg-white p-8 sm:p-12 rounded-[3rem] shadow-2xl border border-gray-100 min-h-[500px] flex flex-col">
                             <div className={`${showCardForm ? 'hidden' : 'flex-1 flex flex-col items-center justify-center animate-fade-in py-6'}`}>
-                                <div className="grid grid-cols-3 gap-4 w-full max-w-2xl mb-12">
+                                <div className="grid grid-cols-2 gap-4 w-full max-w-2xl mb-12">
                                     <button onClick={() => { setPaymentMethod('visa'); handleConfirmPayment('visa'); }} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all ${paymentMethod === 'visa' ? 'border-blue-600 bg-blue-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
                                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'visa' ? 'bg-blue-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -603,12 +627,6 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                                             <span className="font-black text-lg italic">Q</span>
                                         </div>
                                         <span className={`font-black text-[9px] uppercase tracking-widest ${paymentMethod === 'cliq' ? 'text-green-900' : 'text-gray-400'}`}>{strings.cliqTransfer}</span>
-                                    </button>
-                                    <button onClick={() => { setPaymentMethod('bank'); handleConfirmPayment('bank'); }} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all ${paymentMethod === 'bank' ? 'border-indigo-600 bg-indigo-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'bank' ? 'bg-indigo-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
-                                        </div>
-                                        <span className={`font-black text-[9px] uppercase tracking-widest ${paymentMethod === 'bank' ? 'text-indigo-900' : 'text-gray-400'}`}>{strings.bankTransfer}</span>
                                     </button>
                                 </div>
                                 <button onClick={() => handleConfirmPayment()} disabled={isLoading} className="w-full max-w-sm py-5 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 shadow-[0_15px_30px_rgba(0,33,70,0.2)] transition-all transform active:scale-95 text-lg flex items-center justify-center gap-3">

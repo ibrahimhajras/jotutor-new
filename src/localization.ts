@@ -18,7 +18,7 @@ export const arStrings = {
   logout: 'تسجيل الخروج',
   // Fix: Added missing 'back' key.
   back: 'رجوع',
-  
+
   // Language Confirmation
   langConfirmTitle: 'تغيير اللغة',
   langConfirmMessage: 'عند تغيير اللغة يمكن ان تلاحظ تغيير في المحتوى وذلك لضمان الوصول لافضل معرفة بناءاً على اللغة. هل انت متاكد من تغيير اللغة؟',
@@ -47,7 +47,7 @@ export const arStrings = {
   step2Desc: 'اختر الموعد المناسب لك وقم بحجز حصتك الدراسية بسهولة.',
   step3Title: 'ابدأ التعلم',
   step3Desc: 'انضم إلى حصتك عبر الإنترنت وابدأ رحلة التفوق.',
-  
+
   // Teacher Search
   teacherSearchTitle: 'ابحث عن معلمك المثالي',
   teacherSearchSubtitle: 'تواصل مع أفضل المعلمين الخصوصيين في الأردن.',
@@ -180,7 +180,7 @@ export const arStrings = {
   backToBlog: 'العودة إلى المدونة',
   videosTitle: 'فيديوهات تعليمية قصيرة',
   backToVideos: 'العودة إلى الفيديوهات',
-  
+
   // Courses
   coursesPreviewTitle: 'أحدث الدورات',
   coursesPreviewSubtitle: 'تصفح أحدث الدورات المضافة في مختلف المجالات.',
@@ -243,7 +243,7 @@ export const arStrings = {
   subscriptionInvoice: 'فاتورة الاشتراك',
   amountToPay: 'المبلغ المستحق للدفع',
   bankCard: 'البطاقة البنكية',
-  cliqTransfer: 'تحويل CliQ',
+  cliqTransfer: 'تحويل بنكي / CliQ',
   startBankConnection: 'بدء الاتصال بالبنك',
   identityVerification: 'التحقق من الهوية البنكية',
   month: 'الشهر',
@@ -265,6 +265,9 @@ export const arStrings = {
   manualPaymentInstruction: 'في حال الدفع بأي من الطرق السابقة، يرجى إرسال الفاتورة/إيصال الدفع إلى رقمنا عبر الواتساب لتأكيد الدفع وتفعيل الدورة.',
   close: 'إغلاق',
   confirmManualTransfer: 'تأكيد إرسال الحوالة',
+  etihadBank: 'بنك الاتحاد',
+  arabBank: 'البنك العربي',
+  iban: 'الآيبان (IBAN)',
 };
 
 export const enStrings = {
@@ -477,7 +480,7 @@ export const enStrings = {
   subscriptionInvoice: 'Subscription Invoice',
   amountToPay: 'Amount to Pay',
   bankCard: 'Bank Card',
-  cliqTransfer: 'CliQ Transfer',
+  cliqTransfer: 'Bank / CliQ Transfer',
   startBankConnection: 'Start Bank Connection',
   identityVerification: 'Bank Identity Verification',
   month: 'Month',
@@ -499,4 +502,7 @@ export const enStrings = {
   manualPaymentInstruction: 'In case of payment by any of the above methods, please send the invoice/payment receipt to our number via WhatsApp to confirm the payment and activate the course.',
   close: 'Close',
   confirmManualTransfer: 'Confirm Transfer Sent',
+  etihadBank: 'Etihad Bank',
+  arabBank: 'Arab Bank',
+  iban: 'IBAN',
 };

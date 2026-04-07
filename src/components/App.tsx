@@ -180,8 +180,7 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        document.documentElement.lang = language;
-        document.documentElement.dir = 'rtl'; // Keep RTL even for English
+        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
     }, [language]);
 
     useEffect(() => {

@@ -20,11 +20,12 @@ declare global {
     }
 }
 
-const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn, onLoginRequired }) => {
+const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn, onLoginRequired, strings, language }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [showCardForm, setShowCardForm] = useState(false);
     const [gatewayError, setGatewayError] = useState<string | null>(null);
-    const [paymentMethod, setPaymentMethod] = useState<'visa' | 'cliq'>('visa');
+    const [paymentMethod, setPaymentMethod] = useState<'visa' | 'cliq' | 'bank'>('visa');
+    const [showManualModal, setShowManualModal] = useState(false);
     const [paymentReceipt, setPaymentReceipt] = useState<any>(null);
     const [paymentStep, setPaymentStep] = useState<string>('');
 
@@ -133,14 +134,14 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                             handle3DSAndPay(orderId, sessionId, amount);
                         } else if (response.status === "fields_in_error") {
                             setIsLoading(false);
-                            const errorFields = Object.keys(response.errors || {}).join(', ');
-                            setGatewayError(`خطأ في حقول البطاقة: ${errorFields}`);
-                            log(`❌ Card validation error: ${errorFields}`);
-                        } else {
-                            setIsLoading(false);
-                            setGatewayError('خطأ في النظام. يرجى المحاولة مرة أخرى.');
-                            log(`❌ System error during tokenization`);
-                        }
+                        const errorFields = Object.keys(response.errors || {}).join(', ');
+                        setGatewayError(`${strings.fieldsError || 'Card fields error'}: ${errorFields}`);
+                        log(`❌ Card validation error: ${errorFields}`);
+                    } else {
+                        setIsLoading(false);
+                        setGatewayError(strings.systemError || 'System error. Please try again.');
+                        log(`❌ System error during tokenization`);
+                    }
                     }
                 },
                 interaction: {
@@ -166,7 +167,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
         if (!sessionReady) return;
         setIsLoading(true);
         setGatewayError(null);
-        setPaymentStep('جاري التحقق من بيانات البطاقة...');
+        setPaymentStep(strings.checkingCardData || 'Checking card data...');
         log('📤 Submitting card for tokenization...');
         window.PaymentSession.updateSessionFromForm('card');
     };
@@ -177,7 +178,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
     // ===========================
     const handle3DSAndPay = async (orderId: string, sid: string, amount: number) => {
         try {
-            setPaymentStep('جاري المصادقة الأمنية 3DS...');
+            setPaymentStep(strings.security3DS || '3DS Security Authentication...');
             const authTransId = `auth-${Date.now()}`;
 
             // ---- 3a: INITIATE_AUTHENTICATION (device fingerprinting - HIDDEN iframe) ----
@@ -205,7 +206,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
 
             // ---- 3b: AUTHENTICATE_PAYER (OTP challenge - VISIBLE iframe) ----
             log('🔐 Step 2: AUTHENTICATE_PAYER (OTP challenge)...');
-            setPaymentStep('يرجى إكمال التحقق من البنك...');
+            setPaymentStep(strings.completeBankVerification || 'Please complete bank verification...');
 
             const authResp = await fetch('/api/payment/authenticate', {
                 method: 'POST',
@@ -265,7 +266,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
             // The callback posts to window.top/parent
             await new Promise<void>((resolve, reject) => {
                 const maxWait = setTimeout(() => {
-                    reject(new Error('انتهت مهلة التحقق من البنك'));
+                    reject(new Error(strings.bankTimedOut || 'Bank verification timed out'));
                 }, 5 * 60 * 1000); // 5 minutes timeout
 
                 const messageHandler = (event: MessageEvent) => {
@@ -295,7 +296,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                         authConfirmed = true;
                         break;
                     } else if (authStatus === 'AUTHENTICATION_UNSUCCESSFUL' || authStatus === 'AUTHENTICATION_FAILED') {
-                        throw new Error('فشل التحقق من الهوية. يرجى المحاولة مجددًا.');
+                        throw new Error(strings.authFailed || 'Authentication failed. Please try again.');
                     }
                 } catch (pollErr: any) {
                     if (pollErr.message.includes('فشل')) throw pollErr;
@@ -303,7 +304,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 }
             }
             if (!authConfirmed) {
-                throw new Error('لم يتم تأكيد المصادقة في الوقت المناسب');
+                throw new Error(strings.authNotConfirmed || 'Authentication not confirmed in time');
             }
             await executePayment(orderId, sid, amount, authTransId);
 
@@ -322,7 +323,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
     // ===========================
     const executePayment = async (orderId: string, sid: string, amount: number, authTransId: string) => {
         try {
-            setPaymentStep('جاري تنفيذ الدفع...');
+            setPaymentStep(strings.executingPayment || 'Executing payment...');
             log('💳 Calling PAY API...');
 
             const resp = await fetch('/api/payment/pay', {
@@ -340,7 +341,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
             } else {
                 const gatewayCode = data.gatewayCode || data.error?.cause || data.result;
                 const translatedError = translateGatewayError(gatewayCode);
-                throw new Error(`فشل الدفع: ${translatedError} ${gatewayCode && gatewayCode !== translatedError ? `(${gatewayCode})` : ''}`);
+                throw new Error(`${strings.paymentFailed || 'Payment failed'}: ${translatedError} ${gatewayCode && gatewayCode !== translatedError ? `(${gatewayCode})` : ''}`);
             }
         } catch (err: any) {
             log(`💥 Payment error: ${err.message}`);
@@ -353,15 +354,26 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
         }
     };
 
-    const handleConfirmPayment = () => {
+    const handleConfirmPayment = (methodOverride?: 'visa' | 'cliq' | 'bank') => {
+        const method = methodOverride || paymentMethod;
         if (!isLoggedIn) {
             onLoginRequired();
             return;
         }
-        if (paymentMethod === 'visa') {
+        if (method === 'visa') {
             // setShowCardForm(true); // Don't show yet, wait for session init
             initializePaymentSession();
+        } else {
+            setShowManualModal(true);
         }
+    };
+
+    const handleConfirmManualTransfer = () => {
+        onEnroll(course, 'Pending', { 
+            paymentMethod: paymentMethod === 'cliq' ? 'CliQ' : 'Bank Transfer',
+            transactionId: `MANUAL-${Date.now()}` 
+        });
+        setShowManualModal(false);
     };
 
     // ===========================
@@ -373,16 +385,16 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 <div className="container mx-auto px-4 max-w-lg">
                     <div className="bg-white p-12 rounded-[3rem] shadow-2xl text-center">
                         <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">🎉</div>
-                        <h2 className="text-3xl font-black text-green-600 mb-2">تمت العملية بنجاح!</h2>
-                        <p className="text-gray-500 mb-8">تم خصم المبلغ وتسجيلك في الدورة</p>
-                        <div className="space-y-3 bg-gray-50 p-6 rounded-2xl text-sm text-right">
-                            <div className="flex justify-between"><span className="text-gray-400">المبلغ</span><span className="font-black text-blue-900">{paymentReceipt.amount} JOD</span></div>
-                            <div className="flex justify-between"><span className="text-gray-400">رقم الطلب</span><span className="font-black text-blue-900">{paymentReceipt.orderId}</span></div>
-                            <div className="flex justify-between"><span className="text-gray-400">رقم العملية</span><span className="font-black text-blue-900">{paymentReceipt.transactionId}</span></div>
-                            <div className="flex justify-between"><span className="text-gray-400">الحالة</span><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-black">✅ مكتمل</span></div>
+                        <h2 className="text-3xl font-black text-green-600 mb-2">{strings.successTransaction || 'Transaction Successful!'}</h2>
+                        <p className="text-gray-500 mb-8">{strings.paymentDeducted || 'Payment deducted and you are enrolled in the course'}</p>
+                        <div className={`space-y-3 bg-gray-50 p-6 rounded-2xl text-sm ${language === 'ar' ? 'text-right' : 'text-left'}`}>
+                            <div className="flex justify-between"><span className="text-gray-400">{strings.amount || 'Amount'}</span><span className="font-black text-blue-900">{paymentReceipt.amount} {strings.jodLabel}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{strings.orderNumber || 'Order Number'}</span><span className="font-black text-blue-900">{paymentReceipt.orderId}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{strings.transactionId || 'Transaction ID'}</span><span className="font-black text-blue-900">{paymentReceipt.transactionId}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-400">{strings.status || 'Status'}</span><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-black">✅ {strings.completed || 'Completed'}</span></div>
                         </div>
                         <button onClick={() => window.location.href = '/dashboard'} className="w-full py-5 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 shadow-xl transition-all mt-6">
-                            الانتقال للوحة التحكم
+                            {strings.goToDashboard || 'Go to Dashboard'}
                         </button>
                     </div>
                 </div>
@@ -404,7 +416,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
                     <div className="bg-white rounded-3xl shadow-2xl overflow-hidden w-full max-w-md mx-4">
                         <div className="bg-blue-900 px-6 py-4 flex items-center justify-between">
-                            <h3 className="text-white font-black text-sm uppercase tracking-wider">التحقق من الهوية البنكية</h3>
+                            <h3 className="text-white font-black text-sm uppercase tracking-wider">{strings.identityVerification}</h3>
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                                 <span className="text-green-400 text-xs font-bold">SECURE</span>
@@ -419,12 +431,135 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                 </div>
             )}
 
+            {/* Manual Payment Details Modal */}
+            {showManualModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 overflow-y-auto">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in-up">
+                        {/* Modal Header */}
+                        <div className="bg-blue-900 p-8 text-white relative">
+                            <button onClick={() => setShowManualModal(false)} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                            <h2 className="text-2xl font-black mb-1">{strings.paymentDetailsTitle} - {course.title}</h2>
+                            <div className="bg-green-500/20 text-green-300 text-[10px] font-black uppercase tracking-[0.2em] inline-block px-3 py-1 rounded-full border border-green-500/30">
+                                {course.priceJod || course.price} {strings.jodLabel}
+                            </div>
+                        </div>
+
+                        <div className="p-8 space-y-8 max-h-[70vh] overflow-y-auto text-right" dir="rtl">
+                            {/* CliQ & E-Wallets Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 text-blue-900 border-b pb-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                                    <h3 className="font-black text-lg">{strings.eWallets}</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex flex-col gap-2 relative">
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{strings.cliqUsername} (CliQ)</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-black text-blue-900">JOTUTOR</span>
+                                            <button onClick={() => navigator.clipboard.writeText('JOTUTOR')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-blue-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-50 p-5 rounded-3xl border border-gray-100 flex flex-col gap-2 relative">
+                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider">{strings.walletNumber} (Zain Cash)</span>
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-black text-blue-900">0792822241</span>
+                                            <button onClick={() => navigator.clipboard.writeText('0792822241')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-blue-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="bg-blue-50/50 p-5 rounded-3xl border border-blue-100 flex flex-col gap-2" dir="ltr">
+                                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-wider text-right">IBAN</span>
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-black text-blue-900 text-xs sm:text-sm tracking-tighter">JO89 ARAB 1450 0000 0014 5199 5405 00</span>
+                                        <button onClick={() => navigator.clipboard.writeText('JO89 ARAB 1450 0000 0014 5199 5405 00')} className="p-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Bank Transfer Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 text-blue-900 border-b pb-3">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                    <h3 className="font-black text-lg">{strings.bankTransfer}</h3>
+                                </div>
+                                
+                                {/* Etihad Bank */}
+                                <div className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 space-y-4 relative overflow-hidden">
+                                     <div className="flex justify-between items-start">
+                                         <div className="text-right">
+                                            <span className="bg-indigo-600 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Etihad Bank</span>
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{strings.accountName}</p>
+                                                    <p className="font-black text-blue-900">Smooth Business</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase">{strings.accountNumber}</p>
+                                                    <p className="font-black text-blue-900 text-sm">0370137195515102</p>
+                                                </div>
+                                                <div dir="ltr">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase text-right">IBAN</p>
+                                                    <p className="font-black text-blue-900 text-xs tracking-tighter">JO23UBS1250000370137195515102</p>
+                                                </div>
+                                            </div>
+                                         </div>
+                                         <button onClick={() => navigator.clipboard.writeText('JO23UBS1250000370137195515102')} className="p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-blue-600">
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                         </button>
+                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Important Note */}
+                            <div className="bg-yellow-50 p-6 rounded-3xl border border-yellow-100 flex gap-4 text-right">
+                                <div className="p-3 bg-yellow-400 text-white rounded-2xl h-fit">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-yellow-900 mb-1">{strings.importantNote}</h4>
+                                    <p className="text-sm text-yellow-800 leading-relaxed font-bold opacity-80">{strings.manualPaymentInstruction}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-3 pt-4">
+                                <button
+                                    onClick={() => {
+                                        const msg = encodeURIComponent(`مرحباً، لقد قمت بالتحويل لعملية شراء دورة: ${course.title} بمبلغ ${course.priceJod || course.price} د.أ. يرجى تفعيل الدورة.`);
+                                        window.open(`https://wa.me/962792822241?text=${msg}`);
+                                    }}
+                                    className="w-full py-5 rounded-2xl font-black text-white bg-green-600 hover:bg-green-700 shadow-xl shadow-green-200 transition-all flex items-center justify-center gap-3"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.246 2.248 3.484 5.232 3.484 8.412-.003 6.557-5.338 11.892-11.893 11.892-1.997-.001-3.951-.5-5.688-1.448l-6.309 1.656zm6.224-3.92s.214.123.58.345c1.486.879 3.198 1.345 4.947 1.345 5.232 0 9.492-4.259 9.494-9.494.001-2.536-.987-4.92-2.782-6.714s-4.177-2.783-6.715-2.783c-5.232 0-9.491 4.259-9.494 9.494 0 1.734.456 3.425 1.319 4.898.153.261.32.543.32.543l-1.008 3.682 3.839-1.006zm10.985-6.756c-.237-.119-1.401-.691-1.619-.771-.217-.079-.375-.119-.533.119-.158.238-.612.771-.75.931-.138.161-.277.181-.514.062-.237-.119-.998-.368-1.9-1.173-.702-.626-1.176-1.398-1.314-1.635-.138-.238-.015-.367.104-.485.107-.107.237-.277.356-.416.119-.138.158-.238.237-.396s.04-.297-.079-.416l-.533-1.287c-.156-.376-.32-.324-.533-.324-.158 0-.337-.019-.514-.019s-.474.066-.721.336c-.247.271-.948.926-.948 2.257 0 1.331.968 2.615 1.106 2.801.138.182 1.902 2.903 4.608 4.069.645.277 1.148.441 1.541.566.647.205 1.236.176 1.701.107.519-.077 1.401-.572 1.599-1.126.198-.554.198-1.029.139-1.127-.059-.099-.218-.158-.456-.277z"/></svg>
+                                    {strings.contactWhatsApp}
+                                </button>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => setShowManualModal(false)} className="py-4 rounded-2xl font-black text-gray-500 bg-gray-100 hover:bg-gray-200 transition-all">
+                                        {strings.close}
+                                    </button>
+                                    <button onClick={handleConfirmManualTransfer} className="py-4 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 transition-all">
+                                        {strings.confirmManualTransfer}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="container mx-auto px-4 max-w-6xl">
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl font-black text-blue-900 mb-2 tracking-tighter uppercase">بوابة الدفع البنكية</h1>
+                    <h1 className="text-4xl font-black text-blue-900 mb-2 tracking-tighter uppercase">{strings.paymentGatewayTitle}</h1>
                     <div className="flex items-center justify-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest">
                         <span className="w-2 h-2 bg-green-500 rounded-full animate-ping"></span>
-                        نظام دفع فعلي مشفر
+                        {strings.securePaymentSystem}
                     </div>
                 </div>
 
@@ -433,7 +568,7 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                     <div className="lg:col-span-4 space-y-4">
                         <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-gray-100 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full opacity-50"></div>
-                            <h2 className="font-black text-blue-900 mb-6 text-sm uppercase tracking-widest border-b pb-4">فاتورة الاشتراك</h2>
+                            <h2 className="font-black text-blue-900 mb-6 text-sm uppercase tracking-widest border-b pb-4">{strings.subscriptionInvoice}</h2>
                             <div className="flex gap-4 mb-8 relative z-10">
                                 <img src={course.imageUrl} className="w-16 h-16 rounded-2xl object-cover shadow-lg border-2 border-white" alt="" />
                                 <div className="flex flex-col justify-center">
@@ -442,8 +577,8 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                                 </div>
                             </div>
                             <div className="bg-blue-50/50 p-6 rounded-3xl border border-blue-100/50 text-center">
-                                <p className="text-[10px] font-black text-blue-400 mb-1 uppercase">المبلغ المستحق للدفع</p>
-                                <div className="text-4xl font-black text-blue-900">{course.priceJod || course.price} <small className="text-xs font-bold">JOD</small></div>
+                                <p className="text-[10px] font-black text-blue-400 mb-1 uppercase">{strings.amountToPay}</p>
+                                <div className="text-4xl font-black text-blue-900">{course.priceJod || course.price} <small className="text-xs font-bold">{strings.jodLabel}</small></div>
                             </div>
                         </div>
                         <div className="flex items-center justify-center gap-6 opacity-30 px-6 grayscale">
@@ -456,55 +591,61 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                     <div className="lg:col-span-8">
                         <div className="bg-white p-8 sm:p-12 rounded-[3rem] shadow-2xl border border-gray-100 min-h-[500px] flex flex-col">
                             <div className={`${showCardForm ? 'hidden' : 'flex-1 flex flex-col items-center justify-center animate-fade-in py-6'}`}>
-                                <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-12">
-                                    <button onClick={() => setPaymentMethod('visa')} className={`flex flex-col items-center gap-3 p-8 rounded-[2.5rem] border-2 transition-all ${paymentMethod === 'visa' ? 'border-blue-600 bg-blue-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
-                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'visa' ? 'bg-blue-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                <div className="grid grid-cols-3 gap-4 w-full max-w-2xl mb-12">
+                                    <button onClick={() => { setPaymentMethod('visa'); handleConfirmPayment('visa'); }} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all ${paymentMethod === 'visa' ? 'border-blue-600 bg-blue-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'visa' ? 'bg-blue-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                                         </div>
-                                        <span className={`font-black text-[10px] uppercase tracking-widest ${paymentMethod === 'visa' ? 'text-blue-900' : 'text-gray-400'}`}>البطاقة البنكية</span>
+                                        <span className={`font-black text-[9px] uppercase tracking-widest ${paymentMethod === 'visa' ? 'text-blue-900' : 'text-gray-400'}`}>{strings.bankCard}</span>
                                     </button>
-                                    <button onClick={() => setPaymentMethod('cliq')} className={`flex flex-col items-center gap-3 p-8 rounded-[2.5rem] border-2 transition-all ${paymentMethod === 'cliq' ? 'border-green-600 bg-green-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
-                                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'cliq' ? 'bg-green-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
-                                            <span className="font-black text-xl italic">Q</span>
+                                    <button onClick={() => { setPaymentMethod('cliq'); handleConfirmPayment('cliq'); }} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all ${paymentMethod === 'cliq' ? 'border-green-600 bg-green-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'cliq' ? 'bg-green-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
+                                            <span className="font-black text-lg italic">Q</span>
                                         </div>
-                                        <span className={`font-black text-[10px] uppercase tracking-widest ${paymentMethod === 'cliq' ? 'text-green-900' : 'text-gray-400'}`}>تحويل CliQ</span>
+                                        <span className={`font-black text-[9px] uppercase tracking-widest ${paymentMethod === 'cliq' ? 'text-green-900' : 'text-gray-400'}`}>{strings.cliqTransfer}</span>
+                                    </button>
+                                    <button onClick={() => { setPaymentMethod('bank'); handleConfirmPayment('bank'); }} className={`flex flex-col items-center gap-3 p-6 rounded-[2rem] border-2 transition-all ${paymentMethod === 'bank' ? 'border-indigo-600 bg-indigo-50/30' : 'border-gray-50 bg-gray-50/20'}`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform ${paymentMethod === 'bank' ? 'bg-indigo-600 text-white shadow-xl scale-110' : 'bg-white text-gray-400 border shadow-sm'}`}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>
+                                        </div>
+                                        <span className={`font-black text-[9px] uppercase tracking-widest ${paymentMethod === 'bank' ? 'text-indigo-900' : 'text-gray-400'}`}>{strings.bankTransfer}</span>
                                     </button>
                                 </div>
-                                <button onClick={handleConfirmPayment} disabled={isLoading} className="w-full max-w-sm py-5 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 shadow-[0_15px_30px_rgba(0,33,70,0.2)] transition-all transform active:scale-95 text-lg flex items-center justify-center gap-3">
-                                    {isLoading ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : "بدء الاتصال بالبنك"}
+                                <button onClick={() => handleConfirmPayment()} disabled={isLoading} className="w-full max-w-sm py-5 rounded-2xl font-black text-white bg-blue-900 hover:bg-blue-800 shadow-[0_15px_30px_rgba(0,33,70,0.2)] transition-all transform active:scale-95 text-lg flex items-center justify-center gap-3">
+                                    {isLoading ? <div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div> : strings.startBankConnection}
                                 </button>
                             </div>
 
                             <div className={`${!showCardForm ? 'hidden' : 'animate-fade-in-up flex-1 flex flex-col'}`}>
                                 <div className="flex items-center justify-between mb-6">
-                                    <button onClick={() => { setShowCardForm(false); setSessionReady(false); setGatewayError(null); setPaymentStep(''); }} className="text-blue-600 font-black text-xs flex items-center gap-2 hover:bg-blue-50 px-4 py-2 rounded-full transition-all">&larr; رجوع</button>
+                                    <button onClick={() => { setShowCardForm(false); setSessionReady(false); setGatewayError(null); setPaymentStep(''); }} className="text-blue-600 font-black text-xs flex items-center gap-2 hover:bg-blue-50 px-4 py-2 rounded-full transition-all">&larr; {strings.back}</button>
                                     <div className="bg-gray-100 text-[9px] font-black text-gray-500 px-4 py-1.5 rounded-full border uppercase tracking-widest flex items-center gap-2">
                                         <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                                        Secure Payment
+                                        {strings.securePayment}
                                     </div>
                                 </div>
 
                                 {/* Card Hosted Fields */}
                                 <div className="flex-1 space-y-5">
                                     <div>
-                                        <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">اسم حامل البطاقة</label>
+                                        <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">{strings.cardHolder}</label>
                                         <input type="text" id="cardholder-name" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Cardholder Name" />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">رقم البطاقة</label>
-                                        <input type="text" id="card-number" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Card Number" />
+                                        <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">{strings.cardNumber}</label>
+                                        <input type="text" id="card-number" dir="ltr" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50" readOnly placeholder="Card Number" />
                                     </div>
-                                    <div className="grid grid-cols-3 gap-4">
+                                    <div className="grid grid-cols-3 gap-4" dir="ltr">
                                         <div>
-                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">الشهر</label>
+                                            <label className="block text-[8px] font-black text-gray-500 mb-1 uppercase tracking-wider text-center">{strings.month}</label>
                                             <input type="text" id="expiry-month" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="MM" />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">السنة</label>
+                                            <label className="block text-[8px] font-black text-gray-500 mb-1 uppercase tracking-wider text-center">{strings.year}</label>
                                             <input type="text" id="expiry-year" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="YY" />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-black text-gray-500 mb-2 uppercase tracking-wider">CVV</label>
+                                            <label className="block text-[8px] font-black text-gray-500 mb-1 uppercase tracking-wider text-center">{strings.cvv}</label>
                                             <input type="text" id="security-code" className="w-full h-12 px-4 border-2 border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:outline-none transition-colors bg-gray-50 text-center" readOnly placeholder="CVV" />
                                         </div>
                                     </div>
@@ -519,14 +660,14 @@ const PaymentPage: React.FC<PaymentPageProps> = ({ course, onEnroll, isLoggedIn,
                                     {gatewayError && (
                                         <div className="bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm font-bold flex flex-col gap-1">
                                             <span>⚠️ {gatewayError}</span>
-                                            <span className="text-xs font-normal opacity-80">(تم تحديث الجلسة تلقائياً، يرجى إدخال البطاقة والمحاولة مجدداً)</span>
+                                            <span className="text-[10px] font-normal opacity-80">{strings.sessionRefreshed}</span>
                                         </div>
                                     )}
 
                                     <button onClick={handleSubmitPayment} disabled={isLoading || !sessionReady} className={`w-full py-4 rounded-2xl font-black text-white shadow-xl transition-all text-lg flex items-center justify-center gap-3 mt-4 ${isLoading || !sessionReady ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-900 hover:bg-blue-800 active:scale-95'}`}>
                                         {isLoading ? (
-                                            <><div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>{paymentStep || 'جاري المعالجة...'}</>
-                                        ) : !sessionReady ? 'جاري تحميل نموذج الدفع...' : `ادفع ${course.priceJod || course.price} دينار`}
+                                            <><div className="w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></div>{paymentStep || 'Processing...'}</>
+                                        ) : !sessionReady ? 'Loading payment form...' : `${strings.payAmount} ${course.priceJod || course.price} ${strings.jodLabel}`}
                                     </button>
                                 </div>
                             </div>

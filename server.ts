@@ -21,10 +21,12 @@ async function startServer() {
   const API_PASSWORD = (process.env.MASTERCARD_API_PASSWORD || "").trim();
   const AUTH_HEADER = `Basic ${Buffer.from(`merchant.${MERCHANT_ID}:${API_PASSWORD}`).toString('base64')}`;
 
+  const apiRouter = express.Router();
+
   // ============================================================
   // STEP 1: Create a simple session (no INITIATE_CHECKOUT)
   // ============================================================
-  app.post("/api/payment/session", async (req, res) => {
+  apiRouter.post("/payment/session", async (req, res) => {
     const { amount, currency, orderId } = req.body;
 
     if (!MERCHANT_ID || !API_PASSWORD) {
@@ -85,7 +87,7 @@ async function startServer() {
   // ============================================================
   // STEP 2: Initiate 3DS Authentication (server-side)
   // ============================================================
-  app.post("/api/payment/initiate-auth", async (req, res) => {
+  apiRouter.post("/payment/initiate-auth", async (req, res) => {
     const { orderId, transactionId, sessionId, amount, currency, returnUrl } = req.body;
 
     try {
@@ -127,7 +129,7 @@ async function startServer() {
   // ============================================================
   // STEP 3: Authenticate Payer (server-side)
   // ============================================================
-  app.post("/api/payment/authenticate", async (req, res) => {
+  apiRouter.post("/payment/authenticate", async (req, res) => {
     const { orderId, transactionId, sessionId, amount, currency, browserDetails } = req.body;
 
     try {
@@ -182,7 +184,7 @@ async function startServer() {
   // ============================================================
   // STEP 3.5: Handle 3DS Redirect Callback from Bank ACS
   // ============================================================
-  app.post("/api/payment/3ds-callback", (req, res) => {
+  apiRouter.post("/payment/3ds-callback", (req, res) => {
     // The bank will POST data here after the OTP challenge
     console.log("[3DS-Callback] Received data from bank ACS:", Object.keys(req.body || {}));
 
@@ -216,12 +218,10 @@ async function startServer() {
     res.send(htmlResponse);
   });
 
-
-
   // ============================================================
   // STEP 4: Execute the Payment (PAY API)
   // ============================================================
-  app.post("/api/payment/pay", async (req, res) => {
+  apiRouter.post("/payment/pay", async (req, res) => {
     const { orderId, transactionId, sessionId, amount, currency, authTransactionId } = req.body;
 
     try {
@@ -295,7 +295,7 @@ async function startServer() {
   // ============================================================
   // Order Status Query (diagnostic)
   // ============================================================
-  app.get("/api/payment/order-status/:orderId", async (req, res) => {
+  apiRouter.get("/payment/order-status/:orderId", async (req, res) => {
     const { orderId } = req.params;
     try {
       const response = await fetch(
@@ -309,6 +309,16 @@ async function startServer() {
       res.status(500).json({ error: error.message });
     }
   });
+
+  // Mount the router
+  // 1. Locally, we use /api (to match frontend calls to /api/...)
+  app.use("/api", apiRouter);
+  // 2. On Netlify, the function itself is already under /.netlify/functions/api
+  //    The redirect in netlify.toml maps /api/* to /.netlify/functions/api/:splat
+  //    This means for /api/payment/session, Netlify calls the function with path /payment/session
+  //    So we mount under root to catch "payment/session"
+  app.use("/", apiRouter);
+
 
   // Vite middleware for development (local only)
   if (process.env.NODE_ENV !== "production") {

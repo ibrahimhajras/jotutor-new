@@ -20,10 +20,10 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, strings }) => {
 
   useEffect(() => {
     fetchPublicData().then(res => {
-        if (res.success && res.data.config?.siteContent) {
-            const content = res.data.config.siteContent;
-            if (content.footer) setFooterData(content.footer);
-            if (content.contact) {
+        if (res.success && res.data.config) {
+            const content = isEn ? res.data.config.siteContentEn || res.data.config.siteContent : res.data.config.siteContent;
+            if (content?.footer) setFooterData(content.footer);
+            if (content?.contact) {
                 setSocialLinks({
                     facebook: content.contact.facebook || '#',
                     instagram: content.contact.instagram || '#',
@@ -33,7 +33,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, strings }) => {
             }
         }
     });
-  }, []);
+  }, [isEn]);
 
   const footerLinks: { label: string; page: Page | 'join' }[] = [
     { label: strings.navAbout, page: 'about' },

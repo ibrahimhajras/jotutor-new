@@ -331,7 +331,7 @@ const App: React.FC = () => {
 
         switch (page) {
             case 'home': return <>
-                <HeroSection onSignupClick={() => setAuthModalOpen(true)} heroSlides={heroSlides} strings={strings} language={language} />
+                <HeroSection onSignupClick={() => setAuthModalOpen(true)} heroSlides={heroSlides} content={currentSiteContent.homepage} strings={strings} language={language} />
                 <FeaturesSection content={currentSiteContent.homepage} strings={strings} />
                 <HowItWorks content={currentSiteContent.homepage} strings={strings} />
                 <TeacherSearch content={currentSiteContent.homepage} teachers={displayedTeachers} subjects={onboardingOptions.subjects} onSelectTeacher={(id) => handleNavigate('teacher-profile', id)} isHomePageVersion={true} strings={strings} language={language} />

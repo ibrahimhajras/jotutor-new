@@ -11,8 +11,8 @@ const ManagePayments: React.FC<ManagePaymentsProps> = ({ payments }) => {
     const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
     const filteredPayments = useMemo<Payment[]>(() => {
-        // تم إخفاء عرض بيانات الدفعات القادمة من Firebase (قاعدة البيانات)
-        return [];
+        if (filter === 'All') return payments;
+        return payments.filter(p => p.status === filter);
     }, [payments, filter]);
 
     return (

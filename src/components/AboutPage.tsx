@@ -11,7 +11,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ content, strings }) => {
     return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="relative h-72 bg-cover bg-center" style={{ backgroundImage: `url(${content.heroImage})` }}>
+      <section className="relative h-72 bg-cover bg-center" style={{ backgroundImage: `url(${content.heroImage_en || content.heroImage})` }}>
         <div className="absolute inset-0 bg-blue-900 bg-opacity-60"></div>
         <div className="container mx-auto px-6 h-full flex items-center justify-center relative z-10">
           <h1 className="text-5xl md:text-6xl font-extrabold text-white text-center">{content.aboutTitle}</h1>
@@ -29,7 +29,7 @@ const AboutPage: React.FC<AboutPageProps> = ({ content, strings }) => {
               </p>
             </div>
             <div className="order-1 md:order-2">
-              <img src={content.visionImage} alt="Our Vision" className="rounded-lg shadow-2xl w-full h-auto object-cover" />
+                <img src={content.visionImage_en || content.visionImage} alt="Vision" className="rounded-2xl shadow-xl w-full h-80 object-cover" />
             </div>
           </div>
         </div>

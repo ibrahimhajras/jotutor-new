@@ -11,8 +11,8 @@ const ContactPage: React.FC<ContactPageProps> = ({ content, strings }) => {
     <div className="py-20 bg-white">
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-blue-900">{strings.contactTitle}</h1>
-          <p className="mt-4 text-lg text-gray-600">نحن هنا لمساعدتك. تواصل معنا عبر القنوات التالية أو أرسل لنا رسالة مباشرة.</p>
+          <h1 className="text-4xl font-extrabold text-blue-900">{content.contactTitle || strings.contactTitle}</h1>
+          <p className="mt-4 text-lg text-gray-600">{content.contactSubtitle || 'نحن هنا لمساعدتك. تواصل معنا عبر القنوات التالية أو أرسل لنا رسالة مباشرة.'}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

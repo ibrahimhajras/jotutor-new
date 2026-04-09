@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const content = `import React, { useState, useEffect } from 'react';
 import { SiteContent, FAQItem, AboutContent, ContactContent, HomepageContent, FooterContent } from '../types';
 import ImageUploadInput from './ImageUploadInput';
 
@@ -43,7 +45,7 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
   const handleAboutChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name === 'whyJoTutor') {
-        setLocalContent(prev => ({ ...prev, about: { ...prev.about, [name]: value.split('\n') } }));
+        setLocalContent(prev => ({ ...prev, about: { ...prev.about, [name]: value.split('\\n') } }));
     } else {
         setLocalContent(prev => ({ ...prev, about: { ...prev.about, [name]: value } }));
     }
@@ -53,7 +55,7 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
       setLocalContent(prev => ({ ...prev, about: { ...prev.about, [name]: value } }));
   };
   
-  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleContactChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
      setLocalContent(prev => ({ ...prev, contact: { ...prev.contact, [name]: value } }));
   };
@@ -98,8 +100,8 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
                             ].map((stat, i) => (
                                 <div key={i} className="bg-white p-3 rounded-lg border">
                                     <label className="block text-[9px] font-black text-gray-400 uppercase">{stat.id}</label>
-                                    <input name={`stats${stat.id}${stat.type}${isEnglishAdmin ? '_en' : ''}` as any} value={(localContent.homepage as any)[`stats${stat.id}${stat.type}${isEnglishAdmin ? '_en' : ''}`] || ''} onChange={handleHomepageChange} className="w-full p-2 border rounded mb-2 text-sm" />
-                                    <input name={`stats${stat.id}Label${isEnglishAdmin ? '_en' : ''}` as any} value={(localContent.homepage as any)[`stats${stat.id}Label${isEnglishAdmin ? '_en' : ''}`] || ''} onChange={handleHomepageChange} className="w-full p-2 border rounded text-xs" />
+                                    <input name={\`stats\${stat.id}\${stat.type}\${isEnglishAdmin ? '_en' : ''}\` as any} value={(localContent.homepage as any)[\`stats\${stat.id}\${stat.type}\${isEnglishAdmin ? '_en' : ''}\`] || ''} onChange={handleHomepageChange} className="w-full p-2 border rounded mb-2 text-sm" />
+                                    <input name={\`stats\${stat.id}Label\${isEnglishAdmin ? '_en' : ''}\` as any} value={(localContent.homepage as any)[\`stats\${stat.id}Label\${isEnglishAdmin ? '_en' : ''}\`] || ''} onChange={handleHomepageChange} className="w-full p-2 border rounded text-xs" />
                                 </div>
                             ))}
                         </div>
@@ -137,9 +139,6 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
                         <div className="p-4 border rounded-xl bg-gray-50">
                             <h3 className="font-bold mb-3">عناوين الأقسام الأخرى</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="md:col-span-2 mb-2">
-                                    <input name="heroButton" value={localContent.homepage.heroButton || ''} onChange={handleHomepageChange} placeholder="زر ابدأ رحلتك التعليمية (الهيرو)" className="w-full p-3 border rounded-xl font-bold" />
-                                </div>
                                 <input name="teacherSearchTitle" value={localContent.homepage.teacherSearchTitle || ''} onChange={handleHomepageChange} placeholder="عنوان البحث عن معلم" className="w-full p-3 border rounded-xl font-bold" />
                                 <input name="teacherSearchSubtitle" value={localContent.homepage.teacherSearchSubtitle || ''} onChange={handleHomepageChange} placeholder="وصف البحث عن معلم" className="w-full p-3 border rounded-xl text-sm" />
                                 <input name="discoverMoreTeachers" value={localContent.homepage.discoverMoreTeachers || ''} onChange={handleHomepageChange} placeholder="زر تصفح المزيد من المعلمين" className="w-full p-3 border rounded-xl text-sm" />
@@ -230,18 +229,13 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
                     <div className="p-4 border rounded-xl bg-gray-50">
                         <h3 className="font-bold mb-3">لماذا نحن</h3>
                         <input name="whyJoTutorTitle" value={localContent.about.whyJoTutorTitle || ''} onChange={handleAboutChange} className="w-full p-2 border rounded mb-2" placeholder="عنوان لماذا تختارنا"/>
-                        <textarea name="whyJoTutor" value={(localContent.about.whyJoTutor || []).join('\n')} onChange={handleAboutChange} className="w-full p-2 border rounded" rows={4} placeholder="الأسباب (كل سبب في سطر جديد)"></textarea>
+                        <textarea name="whyJoTutor" value={(localContent.about.whyJoTutor || []).join('\\n')} onChange={handleAboutChange} className="w-full p-2 border rounded" rows={4} placeholder="الأسباب (كل سبب في سطر جديد)"></textarea>
                     </div>
                 </div>
             );
         case 'contact':
             return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2 space-y-4 mb-4">
-                        <h3 className="font-bold">عناوين صفحة التواصل</h3>
-                        <input name="contactTitle" value={localContent.contact.contactTitle || ''} onChange={handleContactChange} placeholder="عنوان الصفحة (تواصل معنا)" className="w-full p-3 border rounded-xl" />
-                        <textarea name="contactSubtitle" value={localContent.contact.contactSubtitle || ''} onChange={handleContactChange} placeholder="وصف الصفحة" className="w-full p-3 border rounded-xl" rows={2}></textarea>
-                    </div>
                     <input name="email" value={localContent.contact.email || ''} onChange={handleContactChange} placeholder="البريد الإلكتروني" className="w-full p-3 border rounded-xl" />
                     <input name="phone" value={localContent.contact.phone || ''} onChange={handleContactChange} placeholder="رقم الهاتف" className="w-full p-3 border rounded-xl" />
                     <input name="address" value={localContent.contact.address || ''} onChange={handleContactChange} placeholder="العنوان" className="w-full p-3 border rounded-xl md:col-span-2" />
@@ -306,7 +300,7 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
       <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-gray-100">
         <nav className="flex gap-2 overflow-x-auto border-b pb-4 mb-8 no-scrollbar">
             {tabs.map(t => (
-                <button key={t.id} onClick={() => setActiveTab(t.id)} className={`px-6 py-3 rounded-2xl font-black text-xs transition-all whitespace-nowrap ${activeTab === t.id ? 'bg-blue-900 text-white shadow-xl' : 'text-gray-400 hover:bg-gray-50'}`}>
+                <button key={t.id} onClick={() => setActiveTab(t.id)} className={\`px-6 py-3 rounded-2xl font-black text-xs transition-all whitespace-nowrap \${activeTab === t.id ? 'bg-blue-900 text-white shadow-xl' : 'text-gray-400 hover:bg-gray-50'}\`}>
                     {t.label.toUpperCase()}
                 </button>
             ))}
@@ -324,3 +318,5 @@ const ManageContent: React.FC<ManageContentProps> = ({ content, onUpdate, isEngl
 };
 
 export default ManageContent;
+\`;
+fs.writeFileSync('src/admin/ManageContent.tsx', content);

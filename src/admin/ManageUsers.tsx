@@ -12,10 +12,12 @@ interface ManageUsersProps {
 const ManageUsers: React.FC<ManageUsersProps> = ({ users, setUsers, onViewUser, isEnglishAdmin }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredUsers = users.filter(user =>
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = (users || []).filter(user => {
+        const username = user.username || '';
+        const email = user.email || '';
+        const search = searchTerm.toLowerCase();
+        return username.toLowerCase().includes(search) || email.toLowerCase().includes(search);
+    });
 
     const handleRemoveUser = (id: string) => {
         if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
